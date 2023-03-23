@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {BasicOrderType, ItemType, OrderType, Side} from "./ConsiderationEnums.sol";
+import {ConduitItemType} from "./ConduitEnums.sol";
 
 /**
  * @dev An order contains eleven components: an offerer, a zone (or account that
@@ -351,4 +352,38 @@ struct TokenInitializeInfo {
     uint256 volumeNo;
     uint256 chapterName;
     uint256 chapterNo;
+}
+
+/**
+ * @dev A ConduitTransfer is a struct that contains the information needed for a
+ *      conduit to transfer an item from one address to another.
+ */
+struct ConduitTransfer {
+    ConduitItemType itemType;
+    address token;
+    address from;
+    address to;
+    uint256 identifier;
+    uint256 amount;
+}
+
+/**
+ * @dev A struct containing conduit transfer data and its
+ *      corresponding conduitKey.
+ */
+struct AccumulatorStruct {
+    bytes32 conduitKey;
+    ConduitTransfer[] transfers;
+}
+
+/**
+ * @dev  A struct containing the data used to apply a
+ *       fraction to an order.
+ */
+struct FractionData {
+    uint256 numerator; // The portion of the order that should be filled.
+    uint256 denominator; // The total size of the order
+    bytes32 fulfillerConduitKey; // The fulfiller's conduit key.
+    uint256 startTime; // The start time of the order.
+    uint256 endTime; // The end time of the order.
 }

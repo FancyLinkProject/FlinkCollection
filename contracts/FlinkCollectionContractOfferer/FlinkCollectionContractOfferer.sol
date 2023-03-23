@@ -5,6 +5,7 @@ import {ERC20Interface, ERC721Interface, ERC1155Interface} from "./interfaces/Ab
 import {ContractOffererInterface} from "./interfaces/ContractOffererInterface.sol";
 
 import {ItemType} from "./lib/ConsiderationEnums.sol";
+import {OrderFulfiller} from "./lib/OrderFulfiller.sol";
 import {ReceivedItem, Schema, SpentItem, OrderComponents, AdvancedOrderWithTokenInitializeInfo, CriteriaResolver} from "./lib/ConsiderationStructs.sol";
 
 import {OrderValidator} from "./lib/OrderValidator.sol";
@@ -22,7 +23,8 @@ import {CriteriaResolution} from "./lib/CriteriaResolution.sol";
 abstract contract FlinkCollectionContractOfferer is
     ContractOffererInterface,
     OrderValidator,
-    CriteriaResolution
+    CriteriaResolution,
+    OrderFulfiller
 {
     error OrderUnavailable();
 
@@ -37,6 +39,7 @@ abstract contract FlinkCollectionContractOfferer is
     struct ContextData {
         AdvancedOrderWithTokenInitializeInfo advancedOrderWithTokenInitializeInfo;
         CriteriaResolver[] criteriaResolvers;
+        address recipient;
         Side side;
     }
 
@@ -62,6 +65,7 @@ abstract contract FlinkCollectionContractOfferer is
             ReceivedItem[] memory newConsideration
         )
     {
+        // offer and consideration are not used, place here to prevent unused warning
         offer;
         consideration;
 
@@ -89,6 +93,18 @@ abstract contract FlinkCollectionContractOfferer is
             criteriaResolvers
         );
 
+        SpentItem[] memory spentItems;
+        ReceivedItem[] memory receivedItems;
+
+        (spentItems, receivedItems) = _applyFractions(
+            advancedOrderWithTokenInitializeInfo
+                .orderParametersWithTokenInitializeInfo,
+            fillNumerator,
+            fillDenominator,
+            bytes32(0),
+            contextData.recipient
+        );
+
         if (contextData.side == Side.list) {
             //check NFT belongs to flink collection
             for (uint256 i = 0; i < offer.length; i++) {
@@ -108,6 +124,18 @@ abstract contract FlinkCollectionContractOfferer is
 
             // transfer res NFT to this
         } else {}
+
+        // Emit an event signifying that the order has been fulfilled.
+        emit OrderFulfilled(
+            orderHash,
+            advancedOrderWithTokenInitializeInfo
+                .orderParametersWithTokenInitializeInfo
+                .offerer,
+            address(0),
+            contextData.recipient,
+            spentItems,
+            receivedItems
+        );
     }
 
     // function getNewOfferAndConsideration(
