@@ -6,7 +6,7 @@ import {ContractOffererInterface} from "./interfaces/ContractOffererInterface.so
 
 import {ItemType} from "./lib/ConsiderationEnums.sol";
 import {OrderFulfiller} from "./lib/OrderFulfiller.sol";
-import {ReceivedItem, Schema, SpentItem, OrderComponents, AdvancedOrderWithTokenInitializeInfo, CriteriaResolver} from "./lib/ConsiderationStructs.sol";
+import {ReceivedItem, Schema, SpentItem, OrderComponents, AdvancedOrderWithTokenInitializeInfo, OrderParametersWithTokenInitializeInfo, CriteriaResolver, TokenInitializeInfo} from "./lib/ConsiderationStructs.sol";
 
 import {OrderValidator} from "./lib/OrderValidator.sol";
 import {CriteriaResolution} from "./lib/CriteriaResolution.sol";
@@ -74,6 +74,16 @@ abstract contract FlinkCollectionContractOfferer is
         AdvancedOrderWithTokenInitializeInfo
             memory advancedOrderWithTokenInitializeInfo = contextData
                 .advancedOrderWithTokenInitializeInfo;
+
+        OrderParametersWithTokenInitializeInfo
+            memory orderParametersWithTokenInitializeInfo = advancedOrderWithTokenInitializeInfo
+                .orderParametersWithTokenInitializeInfo;
+
+        TokenInitializeInfo memory tokenInitializeInfo = abi.decode(
+            orderParametersWithTokenInitializeInfo.tokenInitializeInfoBytes,
+            (TokenInitializeInfo)
+        );
+
         CriteriaResolver[] memory criteriaResolvers = contextData
             .criteriaResolvers;
 
@@ -97,8 +107,7 @@ abstract contract FlinkCollectionContractOfferer is
         ReceivedItem[] memory receivedItems;
 
         (spentItems, receivedItems) = _applyFractions(
-            advancedOrderWithTokenInitializeInfo
-                .orderParametersWithTokenInitializeInfo,
+            orderParametersWithTokenInitializeInfo,
             fillNumerator,
             fillDenominator,
             bytes32(0),

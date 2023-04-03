@@ -50,7 +50,7 @@ struct OrderComponentsWithTokenInitializeInfo {
     uint256 salt;
     bytes32 conduitKey;
     uint256 counter;
-    bytes tokenInitializeInfo;
+    bytes tokenInitializeInfoBytes;
 }
 
 /**
@@ -352,6 +352,8 @@ struct TokenInitializeInfo {
     uint256 volumeNo;
     uint256 chapterName;
     uint256 chapterNo;
+    address erc20Address;
+    uint256 erc20Amount;
 }
 
 /**
