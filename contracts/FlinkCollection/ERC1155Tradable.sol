@@ -94,13 +94,10 @@ contract ERC1155Tradable is
      *
      * - `account` cannot be the zero address.
      */
-    function balanceOf(address account, uint256 id)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function balanceOf(
+        address account,
+        uint256 id
+    ) public view virtual override returns (uint256) {
         require(
             account != address(0),
             "ERC1155: balance query for the zero address"
@@ -115,13 +112,10 @@ contract ERC1155Tradable is
      *
      * - `accounts` and `ids` must have the same length.
      */
-    function balanceOfBatch(address[] memory accounts, uint256[] memory ids)
-        public
-        view
-        virtual
-        override
-        returns (uint256[] memory)
-    {
+    function balanceOfBatch(
+        address[] memory accounts,
+        uint256[] memory ids
+    ) public view virtual override returns (uint256[] memory) {
         require(
             accounts.length == ids.length,
             "ERC1155: accounts and ids length mismatch"
@@ -148,12 +142,10 @@ contract ERC1155Tradable is
     /**
      * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-free listings.
      */
-    function isApprovedForAll(address _owner, address _operator)
-        public
-        view
-        override
-        returns (bool isOperator)
-    {
+    function isApprovedForAll(
+        address _owner,
+        address _operator
+    ) public view override returns (bool isOperator) {
         // Whitelist OpenSea proxy contracts for easy trading.
         if (_isProxyForUser(_owner, _operator)) {
             return true;
@@ -496,12 +488,10 @@ contract ERC1155Tradable is
 
     // PROXY HELPER METHODS
 
-    function _isProxyForUser(address _user, address _address)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isProxyForUser(
+        address _user,
+        address _address
+    ) internal view virtual returns (bool) {
         if (!proxyRegistryAddress.isContract()) {
             return false;
         }
@@ -578,11 +568,9 @@ contract ERC1155Tradable is
 
     // Copied from OpenZeppelin
     // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/c3ae4790c71b7f53cc8fff743536dcb7031fed74/contracts/token/ERC1155/ERC1155.sol#L440
-    function asSingletonArray(uint256 element)
-        private
-        pure
-        returns (uint256[] memory)
-    {
+    function asSingletonArray(
+        uint256 element
+    ) private pure returns (uint256[] memory) {
         uint256[] memory array = new uint256[](1);
         array[0] = element;
 
