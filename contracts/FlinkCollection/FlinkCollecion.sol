@@ -5,24 +5,40 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./AssetContract.sol";
 import "./TokenIdentifiers.sol";
+import "./BaseErrors.sol";
+import "./interfaces/TokenInfoValidityCheck.sol";
+import "./BaseStruct.sol";
+import "./BaseEvents.sol";
 
 /**
  * @title AssetContractShared
  * OpenSea shared asset contract - A contract for easily creating custom assets on OpenSea
  */
-contract FlinkCollection is AssetContract, ReentrancyGuard {
+contract FlinkCollection is
+    AssetContract,
+    ReentrancyGuard,
+    BaseErrors,
+    BaseEvents
+{
+    // keccak256(
+    //     "EIP712Domain(uint256 chainId,address verifyingContract)"
+    // );
+    bytes32 public constant DOMAIN_SEPARATOR_TYPEHASH =
+        0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
+
+    address public tokenInfoValidityCheckAddress;
+
+    address public tokenDataDecoder;
+
     mapping(address => bool) public sharedProxyAddresses;
 
-    struct Ownership {
-        uint256 id;
-        address owner;
-    }
+    mapping(uint256 => TokenInfo) public tokenInfo;
 
-    using TokenIdentifiers for uint256;
-
-    event CreatorChanged(uint256 indexed _id, address indexed _creator);
+    mapping(bytes => SignatureStatus) signatureStatus;
 
     mapping(uint256 => address) internal _creatorOverride;
+
+    using TokenIdentifiers for uint256;
 
     /**
      * @dev Require msg.sender to be the creator of the token id
@@ -208,5 +224,174 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
             return true;
         }
         return super._isProxyForUser(_user, _address);
+    }
+
+    function checkTokenInfoInitialization() public {}
+
+    function initializeTokenInfoPermit(
+        bytes memory data
+    ) external returns (bool) {
+        TokenInitializationInfo memory tokenInitializationInfo = abi.decode(
+            data,
+            (TokenInitializationInfo)
+        );
+
+        require(
+            signatureValidity(tokenInitializationInfo.signature),
+            "invalid signature"
+        );
+
+        // check token info validity
+        if (tokenInfoValidityCheckAddress != address(0)) {
+            bool passValidityCheck = TokenInfoValidityCheck(
+                tokenInfoValidityCheckAddress
+            ).checkTokenInfoValidity(
+                    tokenInitializationInfo.version,
+                    tokenInitializationInfo.data
+                );
+            require(passValidityCheck, "Token Info error");
+        }
+
+        // recover signer
+        address signer = recoverSigner(tokenInitializationInfo);
+
+        uint256 tokenId = tokenInitializationInfo.tokenId;
+
+        // signer should be the creator of the tokenId
+        require(signer == creator(tokenId), "Invalid signer");
+
+        // creator should own the total amount of token
+        require(
+            _ownsTokenAmount(
+                creator(tokenId),
+                tokenId,
+                tokenId.tokenMaxSupply()
+            ),
+            "Should own total token"
+        );
+
+        // if creator assigns tokenUri, then set tokenUri
+        if (tokenInitializationInfo.tokenUri.length > 0) {
+            require(
+                !isPermanentURI(tokenId),
+                "AssetContract#onlyImpermanentURI: URI_CANNOT_BE_CHANGED"
+            );
+            _setURI(tokenId, string(tokenInitializationInfo.tokenUri));
+        }
+
+        // set tokenInfo
+        tokenInfo[tokenId] = TokenInfo(
+            tokenInitializationInfo.version,
+            tokenInitializationInfo.data,
+            true
+        );
+
+        signatureStatus[tokenInitializationInfo.signature].used = true;
+
+        return true;
+    }
+
+    function signatureValidity(
+        bytes memory signature
+    ) public view returns (bool) {
+        return
+            signatureStatus[signature].used == false &&
+            signatureStatus[signature].cancelled == false;
+    }
+
+    function cancelTokenInfoSignature(
+        bytes memory data
+    ) external returns (bool) {
+        TokenInitializationInfo memory tokenInitializationInfo = abi.decode(
+            data,
+            (TokenInitializationInfo)
+        );
+
+        require(
+            signatureValidity(tokenInitializationInfo.signature),
+            "invalid signature"
+        );
+
+        // recover signer
+        address signer = recoverSigner(tokenInitializationInfo);
+
+        require(signer == msg.sender, "Only signer can cancel signature");
+
+        signatureStatus[tokenInitializationInfo.signature].cancelled = true;
+
+        return true;
+    }
+
+    function setTokenInfoValidityCheckAddress(
+        address _tokenInfoValidityCheckAddress
+    ) public onlyOwner {
+        tokenInfoValidityCheckAddress = _tokenInfoValidityCheckAddress;
+        emit TokenInfoValidityCheckerChanged(tokenInfoValidityCheckAddress);
+    }
+
+    function setTokenDataDecodeAddress(
+        address _tokenDataDecoder
+    ) public onlyOwner {
+        tokenDataDecoder = _tokenDataDecoder;
+        emit TokenDataDecoderChanged(tokenDataDecoder);
+    }
+
+    function recoverSigner(
+        TokenInitializationInfo memory tokenInitializationInfo
+    ) internal view returns (address) {
+        // Declare r, s, and v signature parameters.
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        bytes32 msgHash = keccak256(
+            abi.encode(
+                DOMAIN_SEPARATOR_TYPEHASH,
+                tokenInitializationInfo.tokenId,
+                tokenInitializationInfo.version,
+                tokenInitializationInfo.data,
+                tokenInitializationInfo.tokenUri,
+                tokenInitializationInfo.nonce
+            )
+        );
+
+        bytes32 dataHash = keccak256(
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0x01),
+                domainSeparator(),
+                msgHash
+            )
+        );
+
+        bytes32 sigHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+        );
+
+        if (tokenInitializationInfo.signature.length == 65) {
+            (r, s) = abi.decode(
+                tokenInitializationInfo.signature,
+                (bytes32, bytes32)
+            );
+            v = uint8(tokenInitializationInfo.signature[64]);
+
+            // Ensure v value is properly formatted.
+            if (v != 27 && v != 28) {
+                revert BadSignature();
+            }
+        } else {
+            revert BadSignature();
+        }
+
+        address signer = ecrecover(sigHash, v, r, s);
+
+        return signer;
+    }
+
+    function domainSeparator() public view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), this)
+            );
     }
 }
