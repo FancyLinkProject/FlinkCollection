@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {BasicOrderType, ItemType, OrderType, Side} from "./ConsiderationEnums.sol";
+import {ConduitItemType} from "./ConduitEnums.sol";
 
 /**
  * @dev An order contains eleven components: an offerer, a zone (or account that
@@ -25,6 +26,31 @@ struct OrderComponents {
     uint256 salt;
     bytes32 conduitKey;
     uint256 counter;
+}
+
+/**
+ * @dev An order contains eleven components: an offerer, a zone (or account that
+ *      can cancel the order or restrict who can fulfill the order depending on
+ *      the type), the order type (specifying partial fill support as well as
+ *      restricted order status), the start and end time, a hash that will be
+ *      provided to the zone when validating restricted orders, a salt, a key
+ *      corresponding to a given conduit, a counter, and an arbitrary number of
+ *      offer items that can be spent along with consideration items that must
+ *      be received by their respective recipient.
+ */
+struct OrderComponentsWithTokenInitializeInfo {
+    address offerer;
+    address zone;
+    OfferItem[] offer;
+    ConsiderationItem[] consideration;
+    OrderType orderType;
+    uint256 startTime;
+    uint256 endTime;
+    bytes32 zoneHash;
+    uint256 salt;
+    bytes32 conduitKey;
+    uint256 counter;
+    bytes tokenInitializeInfoBytes;
 }
 
 /**
@@ -146,6 +172,28 @@ struct OrderParameters {
 }
 
 /**
+ * @dev The full set of order components, with the exception of the counter,
+ *      must be supplied when fulfilling more sophisticated orders or groups of
+ *      orders. The total number of original consideration items must also be
+ *      supplied, as the caller may specify additional consideration items.
+ */
+struct OrderParametersWithTokenInitializeInfo {
+    address offerer; // 0x00
+    address zone; // 0x20
+    OfferItem[] offer; // 0x40
+    ConsiderationItem[] consideration; // 0x60
+    OrderType orderType; // 0x80
+    uint256 startTime; // 0xa0
+    uint256 endTime; // 0xc0
+    bytes32 zoneHash; // 0xe0
+    uint256 salt; // 0x100
+    bytes32 conduitKey; // 0x120
+    uint256 totalOriginalConsiderationItems; // 0x140
+    // offer.length                          // 0x160
+    bytes tokenInitializeInfo;
+}
+
+/**
  * @dev Orders require a signature in addition to the other order parameters.
  */
 struct Order {
@@ -163,6 +211,22 @@ struct Order {
  */
 struct AdvancedOrder {
     OrderParameters parameters;
+    uint120 numerator;
+    uint120 denominator;
+    bytes signature;
+    bytes extraData;
+}
+
+/**
+ * @dev Advanced orders include a numerator (i.e. a fraction to attempt to fill)
+ *      and a denominator (the total size of the order) in addition to the
+ *      signature and other order parameters. It also supports an optional field
+ *      for supplying extra data; this data will be provided to the zone if the
+ *      order type is restricted and the zone is not the caller, or will be
+ *      provided to the offerer as context for contract order types.
+ */
+struct AdvancedOrderWithTokenInitializeInfo {
+    OrderParametersWithTokenInitializeInfo orderParametersWithTokenInitializeInfo;
     uint120 numerator;
     uint120 denominator;
     bytes signature;
@@ -263,4 +327,65 @@ struct ZoneParameters {
 struct Schema {
     uint256 id;
     bytes metadata;
+}
+
+/**
+ * @dev A struct that is an explicit version of advancedOrders without
+ *       memory optimization, that provides an array of spentItems
+ *       and receivedItems for fulfillment and event emission.
+ */
+struct OrderToExecute {
+    address offerer;
+    SpentItem[] spentItems; // Offer
+    ReceivedItem[] receivedItems; // Consideration
+    bytes32 conduitKey;
+    uint120 numerator;
+    uint256[] spentItemOriginalAmounts;
+    uint256[] receivedItemOriginalAmounts;
+}
+
+struct TokenInitializeInfo {
+    uint256[] tokenIdLs;
+    string[] urlLs;
+    string fictionName;
+    uint256 volumeName;
+    uint256 volumeNo;
+    uint256 chapterName;
+    uint256 chapterNo;
+    address erc20Address;
+    uint256 erc20Amount;
+}
+
+/**
+ * @dev A ConduitTransfer is a struct that contains the information needed for a
+ *      conduit to transfer an item from one address to another.
+ */
+struct ConduitTransfer {
+    ConduitItemType itemType;
+    address token;
+    address from;
+    address to;
+    uint256 identifier;
+    uint256 amount;
+}
+
+/**
+ * @dev A struct containing conduit transfer data and its
+ *      corresponding conduitKey.
+ */
+struct AccumulatorStruct {
+    bytes32 conduitKey;
+    ConduitTransfer[] transfers;
+}
+
+/**
+ * @dev  A struct containing the data used to apply a
+ *       fraction to an order.
+ */
+struct FractionData {
+    uint256 numerator; // The portion of the order that should be filled.
+    uint256 denominator; // The total size of the order
+    bytes32 fulfillerConduitKey; // The fulfiller's conduit key.
+    uint256 startTime; // The start time of the order.
+    uint256 endTime; // The end time of the order.
 }

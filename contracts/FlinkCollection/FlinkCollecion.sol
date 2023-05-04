@@ -226,7 +226,11 @@ contract FlinkCollection is
         return super._isProxyForUser(_user, _address);
     }
 
-    function checkTokenInfoInitialization() public {}
+    function checkTokenInfoInitialization(
+        uint256 tokenId
+    ) public view returns (bool) {
+        return tokenInfo[tokenId].initialized;
+    }
 
     function initializeTokenInfoPermit(
         bytes memory data
