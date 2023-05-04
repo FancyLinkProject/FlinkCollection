@@ -50,8 +50,8 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress,
-        string memory _templateURI
-    ) AssetContract(_name, _symbol, _proxyRegistryAddress, _templateURI) {}
+        string memory _baseURI
+    ) AssetContract(_name, _symbol, _proxyRegistryAddress, _baseURI) {}
 
     /**
      * @dev Allows owner to change the proxy registry
@@ -70,10 +70,9 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
     /**
      * @dev Allows owner to remove a shared proxy address
      */
-    function removeSharedProxyAddress(address _address)
-        public
-        onlyOwnerOrProxy
-    {
+    function removeSharedProxyAddress(
+        address _address
+    ) public onlyOwnerOrProxy {
         delete sharedProxyAddresses[_address];
     }
 
@@ -111,7 +110,10 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
      *            and the creator must own all of the token supply
      * @param _uri New URI for the token.
      */
-    function setURI(uint256 _id, string memory _uri)
+    function setURI(
+        uint256 _id,
+        string memory _uri
+    )
         public
         override
         creatorOnly(_id)
@@ -124,7 +126,10 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
     /**
      * @dev setURI, but permanent
      */
-    function setPermanentURI(uint256 _id, string memory _uri)
+    function setPermanentURI(
+        uint256 _id,
+        string memory _uri
+    )
         public
         override
         creatorOnly(_id)
@@ -180,32 +185,25 @@ contract FlinkCollection is AssetContract, ReentrancyGuard {
         );
     }
 
-    function _remainingSupply(uint256 _id)
-        internal
-        view
-        override
-        returns (uint256)
-    {
+    function _remainingSupply(
+        uint256 _id
+    ) internal view override returns (uint256) {
         return maxSupply(_id) - totalSupply(_id);
     }
 
-    function _isCreatorOrProxy(uint256 _id, address _address)
-        internal
-        view
-        override
-        returns (bool)
-    {
+    function _isCreatorOrProxy(
+        uint256 _id,
+        address _address
+    ) internal view override returns (bool) {
         address creator_ = creator(_id);
         return creator_ == _address || _isProxyForUser(creator_, _address);
     }
 
     // Overrides ERC1155Tradable to allow a shared proxy address
-    function _isProxyForUser(address _user, address _address)
-        internal
-        view
-        override
-        returns (bool)
-    {
+    function _isProxyForUser(
+        address _user,
+        address _address
+    ) internal view override returns (bool) {
         if (sharedProxyAddresses[_address]) {
             return true;
         }
