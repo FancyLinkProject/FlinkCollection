@@ -16,7 +16,34 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
 }
 
-function encodeDataVersion1() {}
+export function encodeDataVersion1(
+  authorAddress: string,
+  fictionName: string,
+  volumeName: string,
+  chapterName: string,
+  volumeNo: number,
+  chapterNo: number,
+  wordsAmount: number
+) {
+  const tokenInfo = defaultAbiCoder.encode(
+    [
+      "tuple(address author, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo, uint256 wordsAmount)",
+    ],
+    [
+      {
+        authorAddress,
+        fictionName,
+        volumeName,
+        chapterName,
+        volumeNo,
+        chapterNo,
+        wordsAmount,
+      },
+    ]
+  );
+
+  return tokenInfo;
+}
 
 export function generateTokenInfoVersion1(
   tokenId: BigNumber,
