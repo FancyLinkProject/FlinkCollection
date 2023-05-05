@@ -6,6 +6,6 @@ contract BaseEvents {
     event CreatorChanged(uint256 indexed _id, address indexed _creator);
     event SignatureInvalidated(bytes signature);
     event TokenInfoInitialized(uint256 tokenId);
-    event TokenInfoValidityCheckerChanged(address newAddress);
-    event TokenDataDecoderChanged(address newAddress);
+    event TokenInfoValidityCheckerChanged(uint256 version, address newAddress);
+    event TokenDataDecoderChanged(uint256 version, address newAddress);
 }
