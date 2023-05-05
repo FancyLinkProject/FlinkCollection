@@ -26,9 +26,7 @@ contract FlinkCollection is
     bytes32 public constant DOMAIN_SEPARATOR_TYPEHASH =
         0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
 
-    address public tokenInfoValidityCheckAddress;
-
-    address public tokenDataDecoder;
+    mapping(uint256 => address) tokenInfoValidityChecker;
 
     mapping(address => bool) public sharedProxyAddresses;
 
@@ -37,6 +35,8 @@ contract FlinkCollection is
     mapping(bytes => SignatureStatus) signatureStatus;
 
     mapping(uint256 => address) internal _creatorOverride;
+
+    mapping(uint256 => address) internal versionDataDecoder;
 
     using TokenIdentifiers for uint256;
 
@@ -246,9 +246,12 @@ contract FlinkCollection is
         );
 
         // check token info validity
-        if (tokenInfoValidityCheckAddress != address(0)) {
+        if (
+            tokenInfoValidityChecker[tokenInitializationInfo.version] !=
+            address(0)
+        ) {
             bool passValidityCheck = TokenInfoValidityCheck(
-                tokenInfoValidityCheckAddress
+                tokenInfoValidityChecker[tokenInitializationInfo.version]
             ).checkTokenInfoValidity(
                     tokenInitializationInfo.version,
                     tokenInitializationInfo.data
@@ -327,17 +330,24 @@ contract FlinkCollection is
     }
 
     function setTokenInfoValidityCheckAddress(
+        uint256 version,
         address _tokenInfoValidityCheckAddress
     ) public onlyOwner {
-        tokenInfoValidityCheckAddress = _tokenInfoValidityCheckAddress;
-        emit TokenInfoValidityCheckerChanged(tokenInfoValidityCheckAddress);
+        tokenInfoValidityChecker[version] = _tokenInfoValidityCheckAddress;
+
+        emit TokenInfoValidityCheckerChanged(
+            version,
+            _tokenInfoValidityCheckAddress
+        );
     }
 
-    function setTokenDataDecodeAddress(
+    function setTokenDataDecoderAddress(
+        uint256 version,
         address _tokenDataDecoder
     ) public onlyOwner {
-        tokenDataDecoder = _tokenDataDecoder;
-        emit TokenDataDecoderChanged(tokenDataDecoder);
+        require(versionDataDecoder[version] == address(0), "Already set");
+        versionDataDecoder[version] = _tokenDataDecoder;
+        emit TokenDataDecoderChanged(version, _tokenDataDecoder);
     }
 
     function recoverSigner(
