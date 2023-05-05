@@ -10,10 +10,6 @@ import "./interfaces/TokenInfoValidityCheck.sol";
 import "./BaseStruct.sol";
 import "./BaseEvents.sol";
 
-/**
- * @title AssetContractShared
- * OpenSea shared asset contract - A contract for easily creating custom assets on OpenSea
- */
 contract FlinkCollection is
     AssetContract,
     ReentrancyGuard,
@@ -36,7 +32,7 @@ contract FlinkCollection is
 
     mapping(uint256 => address) internal _creatorOverride;
 
-    mapping(uint256 => address) internal versionDataDecoder;
+    mapping(uint256 => address) internal versionInfoDecoder;
 
     using TokenIdentifiers for uint256;
 
@@ -341,12 +337,12 @@ contract FlinkCollection is
         );
     }
 
-    function setTokenDataDecoderAddress(
+    function setTokenInfoDecoderAddress(
         uint256 version,
         address _tokenDataDecoder
     ) public onlyOwner {
-        require(versionDataDecoder[version] == address(0), "Already set");
-        versionDataDecoder[version] = _tokenDataDecoder;
+        require(versionInfoDecoder[version] == address(0), "Already set");
+        versionInfoDecoder[version] = _tokenDataDecoder;
         emit TokenDataDecoderChanged(version, _tokenDataDecoder);
     }
 
