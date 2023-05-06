@@ -1,20 +1,17 @@
 import { BigNumber } from "ethers";
 
+export function constructTokenId(
+  address: string,
+  categoryIndex: BigNumber,
+  supply: BigNumber
+) {
+  var tokenId = "";
 
-export function constructTokenId(address:string,categoryIndex:BigNumber,supply :BigNumber){
-    var tokenId = ""
+  tokenId += address;
 
-    tokenId +=address
+  tokenId += categoryIndex.toHexString().slice(2).padStart(14, "0");
 
-    tokenId += categoryIndex.toHexString().slice(2,).padStart(56,'0')
+  tokenId += supply.toHexString().slice(2).padStart(10, "0");
 
-    tokenId += supply.toHexString().slice(2,).padStart(40,'0')
-
-    
-
-    return BigNumber.from(tokenId).toBigInt().toString()
-
+  return BigNumber.from(tokenId);
 }
-
-
-
