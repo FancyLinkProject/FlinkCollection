@@ -228,6 +228,7 @@ contract FlinkCollection is
         return tokenInfo[tokenId].initialized;
     }
 
+    // use bytes to pass data, so that transaction triggered by seaport can
     function initializeTokenInfoPermit(
         bytes memory data
     ) external returns (bool) {
@@ -274,7 +275,7 @@ contract FlinkCollection is
         );
 
         // if creator assigns tokenUri, then set tokenUri
-        if (tokenInitializationInfo.tokenUri.length > 0) {
+        if (bytes(tokenInitializationInfo.tokenUri).length > 0) {
             require(
                 !isPermanentURI(tokenId),
                 "AssetContract#onlyImpermanentURI: URI_CANNOT_BE_CHANGED"

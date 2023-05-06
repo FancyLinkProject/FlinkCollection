@@ -6,7 +6,7 @@ struct TokenInitializationInfo {
     uint256 tokenId;
     uint256 version;
     bytes data;
-    bytes tokenUri;
+    string tokenUri;
     uint256 nonce;
     bytes signature;
 }
