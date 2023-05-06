@@ -7,6 +7,7 @@ contract TokenInfoValidityCheckerV1 {
 
     struct TokenInfo {
         address author;
+        string tokenUri;
         string fictionName;
         string volumeName;
         string chapterName;
