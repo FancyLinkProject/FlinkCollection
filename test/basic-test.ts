@@ -1,8 +1,9 @@
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { randomHex } from "../utils/encoding";
 import hre from "hardhat";
 import crypto from "crypto";
@@ -12,16 +13,21 @@ import { faucet } from "../utils/faucet";
 import { zeroBytes32 } from "../utils/constants";
 import { deployContracts } from "./fixtures/deployContracts";
 
-import { Resolver } from "@ethersproject/providers";
 import {
   FlinkCollection,
   TokenInfoDecoderV1,
   TokenInfoValidityCheckerV1,
 } from "../typechain-types";
 import { TokenInfoVersion } from "./constants";
-import { encodeDataVersion1, generateMessageHash } from "../utils/tokenInitializationPermit";
+import {
+  encodeDataV1,
+  generateMessageHash,
+  generateTokenInfoVersion1,
+  nonceGenerator,
+} from "../utils/tokenInitializationPermit";
+import { constructTokenId } from "../utils/tokenIdentifier";
 
-describe("Register controller test", async function () {
+describe("Flink collection test", function () {
   const chainId = hre.network.config.chainId;
   const { provider } = ethers;
 
@@ -30,13 +36,17 @@ describe("Register controller test", async function () {
   let TokenInfoDecoderV1: TokenInfoDecoderV1;
   let TokenInfoValidityCheckerV1: TokenInfoValidityCheckerV1;
 
-  let Author1: Wallet;
-  let tokenInfoInitializer: Wallet;
+  let Author1 = new ethers.Wallet(randomHex(32), provider);
+  let tokenInfoInitializer = new ethers.Wallet(randomHex(32), provider);
 
   before(async () => {
     // deploy contract
-    ({ flinkCollectionOwner, FlinkCollection, TokenInfoDecoderV1, TokenInfoValidityCheckerV1 } =
-      await deployContracts());
+    ({
+      flinkCollectionOwner,
+      FlinkCollection,
+      TokenInfoDecoderV1,
+      TokenInfoValidityCheckerV1,
+    } = await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
 
@@ -47,7 +57,9 @@ describe("Register controller test", async function () {
     );
 
     // set tokenInfoValidityChecker in FlinkCollection
-    FlinkCollection.connect(flinkCollectionOwner).setTokenInfoValidityCheckAddress(
+    FlinkCollection.connect(
+      flinkCollectionOwner
+    ).setTokenInfoValidityCheckAddress(
       TokenInfoVersion.V1,
       TokenInfoValidityCheckerV1.address
     );
@@ -62,10 +74,18 @@ describe("Register controller test", async function () {
     const volumeNo = 3;
     const chapterNo = 5;
     const wordsAmount = 12345;
-    const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
-
-    const tokenInfoInBytes = encodeDataVersion1(
+    const tokenId = constructTokenId(
       authorAddress,
+      BigNumber.from(1),
+      BigNumber.from(1)
+    );
+    const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
+    var nonce: string;
+    const dataVesion = TokenInfoVersion.V1;
+
+    var data = encodeDataV1(
+      authorAddress,
+      tokenUri,
       fictionName,
       volumeName,
       chapterName,
@@ -75,10 +95,37 @@ describe("Register controller test", async function () {
     );
 
     this.beforeAll(async () => {
-      // generate commitment
-      generateMessageHash(chainId);
+      nonce = await nonceGenerator(authorAddress);
     });
 
-    it("commit", async function () {});
+    it("initialize data", async function () {
+      const { msgHash } = generateMessageHash(
+        chainId,
+        FlinkCollection.address,
+        tokenId,
+        dataVesion,
+        data,
+        tokenUri,
+        nonce
+      );
+
+      var compactSig = await Author1.signMessage(msgHash);
+
+      const tokenInfo = generateTokenInfoVersion1(
+        tokenId,
+        dataVesion,
+        data,
+        tokenUri,
+        nonce,
+        compactSig
+      );
+
+      await FlinkCollection.initializeTokenInfoPermit(tokenInfo);
+
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
+        .initialized;
+
+      expect(tokenInfoInitialized).to.equal(true);
+    });
   });
 });
