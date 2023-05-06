@@ -13,11 +13,14 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
   const t = new Date().getTime().toString();
 
-  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
+  return ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes(userAddress + entropy + t)
+  );
 }
 
-export function encodeDataVersion1(
+export function encodeDataV1(
   authorAddress: string,
+  tokenUri: string,
   fictionName: string,
   volumeName: string,
   chapterName: string,
@@ -27,11 +30,12 @@ export function encodeDataVersion1(
 ) {
   const tokenInfo = defaultAbiCoder.encode(
     [
-      "tuple(address author, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo, uint256 wordsAmount)",
+      "tuple(address author, string tokenUri, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo, uint256 wordsAmount)",
     ],
     [
       {
-        authorAddress,
+        author: authorAddress,
+        tokenUri,
         fictionName,
         volumeName,
         chapterName,
@@ -50,12 +54,12 @@ export function generateTokenInfoVersion1(
   version: number,
   data: string,
   tokenUri: string,
-  nonce: number,
+  nonce: string,
   signature: string
 ) {
   const tokenInitializationInfo = defaultAbiCoder.encode(
     [
-      "tuple(uint256 tokenId, uint256 version, bytes data, bytes tokenUri, uint256 nonce, bytes signature)",
+      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)",
     ],
     [
       {
@@ -73,17 +77,21 @@ export function generateTokenInfoVersion1(
 }
 
 export function generateMessageHash(
-  chainId: number,
+  chainId: number | undefined,
   flinkCollectionAddress: string,
   tokenId: BigNumber,
   version: number,
   data: string,
   tokenUri: string,
-  nonce: number
+  nonce: string
 ) {
+  if (!chainId) {
+    throw "invalid chainId";
+  }
+
   var msgHash = ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
-      ["bytes32", "uint256", "uint256", "bytes", "bytes", "uint256"],
+      ["bytes32", "uint256", "uint256", "bytes", "string", "uint256"],
       [DOMAIN_SEPARATOR_TYPEHASH, tokenId, version, data, tokenUri, nonce]
     )
   );
@@ -100,7 +108,10 @@ export function generateMessageHash(
   return { msgHash: ethers.utils.arrayify(msgHash_2) };
 }
 
-export function getDomainSeparator(chainId: number | undefined, contractAddress: string): string {
+export function getDomainSeparator(
+  chainId: number | undefined,
+  contractAddress: string
+): string {
   return ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
