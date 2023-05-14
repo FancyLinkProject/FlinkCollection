@@ -8,7 +8,9 @@ contract TokenInfoDecoderV1 {
     struct TokenInfo {
         address author;
         string tokenUri;
+        bytes32 fictionIdentifier;
         string fictionName;
+        bytes32 volumeIdentifier;
         string volumeName;
         string chapterName;
         uint256 volumeNo;
