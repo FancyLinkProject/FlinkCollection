@@ -218,9 +218,10 @@ async function main() {
     seaportAddress14
   )) as any as Seaport;
 
-  const flinkContractAddress = "0x91eaa20206971FBfa979dcB5D6A64F7a47262eDc";
+  const flinkContractAddress = "0xD94638a5883D7d7CDc7F9fFAB06E941F3b421fC3";
+  const zone = "0x645027b5AAFAdEf4C9F481084A022Eb451Af2346";
+
   const platformAddress = "0x176cc044b7f181C509A1d145E6DA2877B6c88162";
-  const zone = "0x7c8610a85832aECD9e9010D72df3056DEC26D44b";
   const chainId = 80001;
   const rawNftIdentifierOrCriteria = constructTokenId(
     FancyLinkDev1.address,

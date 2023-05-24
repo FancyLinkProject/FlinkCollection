@@ -8,7 +8,7 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer_1.address);
   console.log("Account balance:", (await deployer_1.getBalance()).toString());
 
-  const FlinkCollectionAddress = "0x91eaa20206971FBfa979dcB5D6A64F7a47262eDc";
+  const FlinkCollectionAddress = "0xEE91F76B3Fc86A4e66c04109aaEBe8a0aF91ecb4";
   const FlinkCollectionFactory = await hre.ethers.getContractFactory("FlinkCollection", deployer_1);
   //   create and initialize checkExecutor using multiContractWallet.address
   const FlinkCollection = await FlinkCollectionFactory.attach(FlinkCollectionAddress);

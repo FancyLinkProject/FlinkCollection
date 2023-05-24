@@ -6,6 +6,8 @@ import {ZoneParameters, Schema} from "./lib/ConsiderationStructs.sol";
 import {ZoneInterface} from "./interfaces/ZoneInterface.sol";
 import {BytesLib} from "./lib/BytesLib.sol";
 
+import {console} from "hardhat/console.sol";
+
 struct TokenInfo {
     uint256 version;
     bytes data;
@@ -23,7 +25,7 @@ struct TokenInitializationInfo {
 
 interface IFlinkCollection {
     function initializeTokenInfoPermit(
-        bytes memory data
+        TokenInitializationInfo memory tokenInitializationInfo
     ) external returns (bool);
 
     function tokenInfo(uint256 tokenId) external returns (TokenInfo memory);
@@ -60,7 +62,7 @@ contract TokenInitializationZone is ZoneInterface {
             // if failed to initialize, then revert
             if (!tokenInfo.initialized) {
                 bool success = flinkCollection.initializeTokenInfoPermit(
-                    zoneData.extraData
+                    tokenInitializationInfo
                 );
                 if (!success) {
                     revert("Failed to initialize token info");

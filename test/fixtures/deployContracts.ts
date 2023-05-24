@@ -39,5 +39,21 @@ export async function deployContracts() {
 
   const TokenInfoValidityCheckerV1 = await TokenInfoValidityCheckerV1Factory.deploy();
 
-  return { flinkCollectionOwner, FlinkCollection, TokenInfoDecoderV1, TokenInfoValidityCheckerV1 };
+  //   deploy TokenInitializationZone
+  let TokenInitializationZoneFactory = await ethers.getContractFactory(
+    "TokenInitializationZone",
+    flinkCollectionOwner
+  );
+
+  const TokenInitializationZone = await TokenInitializationZoneFactory.deploy(
+    FlinkCollection.address
+  );
+
+  return {
+    flinkCollectionOwner,
+    FlinkCollection,
+    TokenInfoDecoderV1,
+    TokenInfoValidityCheckerV1,
+    TokenInitializationZone,
+  };
 }

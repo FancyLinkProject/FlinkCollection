@@ -233,13 +233,8 @@ contract FlinkCollection is
 
     // use bytes to pass data, so that transaction triggered by seaport can
     function initializeTokenInfoPermit(
-        bytes memory data
+        TokenInitializationInfo memory tokenInitializationInfo
     ) public returns (bool) {
-        TokenInitializationInfo memory tokenInitializationInfo = abi.decode(
-            data,
-            (TokenInitializationInfo)
-        );
-
         uint256 tokenId = tokenInitializationInfo.tokenId;
 
         require(!checkTokenInitialized(tokenId), "Already initialized");

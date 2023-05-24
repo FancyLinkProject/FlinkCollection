@@ -1,5 +1,6 @@
 import hre from "hardhat";
 import { ethers } from "ethers";
+import { seaportAddress14 } from "../constants/constants";
 
 async function main() {
   const [deployer_1, deployer_2] = await hre.ethers.getSigners();
@@ -27,6 +28,10 @@ async function main() {
     FlinkCollection.address
   );
   console.log("TokenInitializationZone address: ", TokenInitializationZone.address);
+
+  const tx = await FlinkCollection.connect(deployer_1).addSharedProxyAddress(seaportAddress14, {
+    gasLimit: 300000,
+  });
 }
 
 main()
