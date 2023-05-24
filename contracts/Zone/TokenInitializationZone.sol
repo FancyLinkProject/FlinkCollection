@@ -40,34 +40,41 @@ contract TokenInitializationZone is ZoneInterface {
     function validateOrder(
         ZoneParameters calldata zoneData
     ) external returns (bytes4 validOrderMagicValue) {
+        //decode zoneData.extraData to TokenInitializationInfo[]
         TokenInitializationInfo[] memory tokenInitializationInfoLs = abi.decode(
             zoneData.extraData,
             (TokenInitializationInfo[])
         );
 
+        // loop tokenInitializationInfoLs
         for (uint256 i = 0; i < tokenInitializationInfoLs.length; i++) {
             TokenInitializationInfo
                 memory tokenInitializationInfo = tokenInitializationInfoLs[i];
 
+            // get tokenInfo of the tokenId specified by tokenInitializationInfo
             TokenInfo memory tokenInfo = flinkCollection.tokenInfo(
                 tokenInitializationInfo.tokenId
             );
 
+            // if token hasn't been initialized, initialize it
+            // if failed to initialize, then revert
             if (!tokenInfo.initialized) {
                 bool success = flinkCollection.initializeTokenInfoPermit(
                     zoneData.extraData
                 );
                 if (!success) {
-                    return bytes4("");
+                    revert("Failed to initialize token info");
                 }
             } else {
+                // if token has already been initialized, check whether the token data equals data specified by tokenInitializationInfo
+                // if not equal, revert
                 if (
                     !BytesLib.equal(
                         tokenInfo.data,
                         tokenInitializationInfo.data
                     )
                 ) {
-                    return bytes4("");
+                    revert("Token info doesn't match");
                 }
             }
         }
