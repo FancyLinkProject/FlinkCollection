@@ -218,8 +218,8 @@ async function main() {
     seaportAddress14
   )) as any as Seaport;
 
-  const flinkContractAddress = "0xD94638a5883D7d7CDc7F9fFAB06E941F3b421fC3";
-  const zone = "0x645027b5AAFAdEf4C9F481084A022Eb451Af2346";
+  const flinkContractAddress = "0x018105676e72A3063185045ff42F4Be8B21e66A6";
+  const zone = "0xb4ac7C4B8FbF9509658e1172DA91E64C047D55A7";
 
   const platformAddress = "0x176cc044b7f181C509A1d145E6DA2877B6c88162";
   const chainId = 80001;
@@ -228,8 +228,6 @@ async function main() {
     BigNumber.from(2),
     BigNumber.from(1)
   ).toString();
-
-  console.log(rawNftIdentifierOrCriteria);
 
   const data: OrderData = {
     chainId,
@@ -286,7 +284,7 @@ async function main() {
     .connect(FancyLinkDev2)
     .fulfillAdvancedOrder(newOrder, [], toKey(0), FancyLinkDev2.address, {
       value,
-      gasLimit: 300000,
+      gasLimit: 1000000,
     });
 
   console.log({ tx });

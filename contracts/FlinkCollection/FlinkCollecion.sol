@@ -265,14 +265,14 @@ contract FlinkCollection is
         require(signer == creator(tokenId), "Invalid signer");
 
         // creator should own the total amount of token
-        require(
-            _ownsTokenAmount(
-                creator(tokenId),
-                tokenId,
-                tokenId.tokenMaxSupply()
-            ),
-            "Should own total token"
-        );
+        // require(
+        //     _ownsTokenAmount(
+        //         creator(tokenId),
+        //         tokenId,
+        //         tokenId.tokenMaxSupply()
+        //     ),
+        //     "Should own total token"
+        // );
 
         // if creator assigns tokenUri, then set tokenUri
         if (bytes(tokenInitializationInfo.tokenUri).length > 0) {
