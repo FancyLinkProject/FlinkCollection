@@ -6,6 +6,7 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer_1.address);
   console.log("Account balance:", (await deployer_1.getBalance()).toString());
+
   const FlinkCollectionFactory = await hre.ethers.getContractFactory("FlinkCollection", deployer_1);
   //   create and initialize checkExecutor using multiContractWallet.address
   const FlinkCollection = await FlinkCollectionFactory.deploy(
@@ -14,7 +15,18 @@ async function main() {
     ethers.constants.AddressZero,
     "https://temp.com/"
   );
-  console.log(FlinkCollection.address);
+  console.log("FlinkCollection address: ", FlinkCollection.address);
+
+  //   deploy TokenInitializationZone
+  const TokenInitializationZoneFactory = await hre.ethers.getContractFactory(
+    "TokenInitializationZone",
+    deployer_1
+  );
+  //   create and initialize checkExecutor using multiContractWallet.address
+  const TokenInitializationZone = await TokenInitializationZoneFactory.deploy(
+    FlinkCollection.address
+  );
+  console.log("TokenInitializationZone address: ", TokenInitializationZone.address);
 }
 
 main()

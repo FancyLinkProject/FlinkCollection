@@ -9,6 +9,7 @@ import "./BaseErrors.sol";
 import "./interfaces/TokenInfoValidityCheck.sol";
 import "./BaseStruct.sol";
 import "./BaseEvents.sol";
+import "./lib/BytesLib.sol";
 
 contract FlinkCollection is
     AssetContract,
@@ -222,20 +223,26 @@ contract FlinkCollection is
         return super._isProxyForUser(_user, _address);
     }
 
-    function checkTokenInfoInitialization(
-        uint256 tokenId
-    ) public view returns (bool) {
-        return tokenInfo[tokenId].initialized;
+    function checkTokenInitialized(uint256 tokenId) public view returns (bool) {
+        if (!tokenInfo[tokenId].initialized) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     // use bytes to pass data, so that transaction triggered by seaport can
     function initializeTokenInfoPermit(
         bytes memory data
-    ) external returns (bool) {
+    ) public returns (bool) {
         TokenInitializationInfo memory tokenInitializationInfo = abi.decode(
             data,
             (TokenInitializationInfo)
         );
+
+        uint256 tokenId = tokenInitializationInfo.tokenId;
+
+        require(!checkTokenInitialized(tokenId), "Already initialized");
 
         require(
             signatureValidity(tokenInitializationInfo.signature),
@@ -258,8 +265,6 @@ contract FlinkCollection is
 
         // recover signer
         address signer = recoverSigner(tokenInitializationInfo);
-
-        uint256 tokenId = tokenInitializationInfo.tokenId;
 
         // signer should be the creator of the tokenId
         require(signer == creator(tokenId), "Invalid signer");
