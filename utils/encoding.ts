@@ -31,6 +31,8 @@ export const toHex = (n: BigNumberish, numBytes: number = 0) => {
   return `0x${asHexString.padStart(numBytes * 2, "0")}`;
 };
 
+export const toKey = (n: BigNumberish) => toHex(n, 32);
+
 export const toBN = (n: BigNumberish) => BigNumber.from(toHex(n));
 
 export const hex2bin = (hex: string) => {

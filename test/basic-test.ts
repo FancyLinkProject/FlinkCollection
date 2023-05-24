@@ -41,12 +41,8 @@ describe("Flink collection test", function () {
 
   before(async () => {
     // deploy contract
-    ({
-      flinkCollectionOwner,
-      FlinkCollection,
-      TokenInfoDecoderV1,
-      TokenInfoValidityCheckerV1,
-    } = await deployContracts());
+    ({ flinkCollectionOwner, FlinkCollection, TokenInfoDecoderV1, TokenInfoValidityCheckerV1 } =
+      await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
 
@@ -57,9 +53,7 @@ describe("Flink collection test", function () {
     );
 
     // set tokenInfoValidityChecker in FlinkCollection
-    FlinkCollection.connect(
-      flinkCollectionOwner
-    ).setTokenInfoValidityCheckAddress(
+    FlinkCollection.connect(flinkCollectionOwner).setTokenInfoValidityCheckAddress(
       TokenInfoVersion.V1,
       TokenInfoValidityCheckerV1.address
     );
@@ -74,11 +68,7 @@ describe("Flink collection test", function () {
     const volumeNo = 3;
     const chapterNo = 5;
     const wordsAmount = 12345;
-    const tokenId = constructTokenId(
-      authorAddress,
-      BigNumber.from(1),
-      BigNumber.from(1)
-    );
+    const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
     const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
     var nonce: string;
     const dataVesion = TokenInfoVersion.V1;
@@ -122,8 +112,7 @@ describe("Flink collection test", function () {
 
       await FlinkCollection.initializeTokenInfoPermit(tokenInfo);
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
