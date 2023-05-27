@@ -98,7 +98,7 @@ describe("Flink collection test", function () {
       nonce = await nonceGenerator(authorAddress);
     });
 
-    it("initialize data", async function () {
+    it("success with correct parameters", async function () {
       const { msgHash } = generateMessageHash(
         chainId,
         FlinkCollection.address,
@@ -126,6 +126,35 @@ describe("Flink collection test", function () {
         .initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
+    });
+
+    it("revert with invalid signature", async function () {
+      const { msgHash } = generateMessageHash(
+        chainId,
+        FlinkCollection.address,
+        tokenId,
+        dataVesion,
+        data,
+        tokenUri,
+        nonce
+      );
+
+      //   wrong signature
+      var compactSig =
+        "0x1234567241b2e4a313606d5546331b981834cde1e392b34d889e047461d2603c11c117f88d32be20dc8cd35029179bea977e1ee231c2b5ab0dc8c04f1a55a71d1c";
+
+      const tokenInfo = generateTokenInfoVersion1(
+        tokenId,
+        dataVesion,
+        data,
+        tokenUri,
+        nonce,
+        compactSig
+      );
+
+      await expect(
+        FlinkCollection.initializeTokenInfoPermit(tokenInfo)
+      ).to.be.revertedWith("Invalid signer");
     });
   });
 });
