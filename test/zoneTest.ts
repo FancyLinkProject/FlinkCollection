@@ -26,6 +26,7 @@ import {
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
 import { constructTokenId } from "../utils/tokenIdentifier";
+import { TokenInitializationZone } from "../typechain-types/TokenInitializationZone.sol";
 
 describe("Flink collection test", function () {
   const chainId = hre.network.config.chainId;
@@ -33,30 +34,16 @@ describe("Flink collection test", function () {
 
   var flinkCollectionOwner: Wallet;
   let FlinkCollection: FlinkCollection;
-  let TokenInfoDecoderV1: TokenInfoDecoderV1;
-  let TokenInfoValidityCheckerV1: TokenInfoValidityCheckerV1;
+  let TokenInitializationZone: TokenInitializationZone;
 
   let Author1 = new ethers.Wallet(randomHex(32), provider);
   let tokenInfoInitializer = new ethers.Wallet(randomHex(32), provider);
 
   before(async () => {
     // deploy contract
-    ({ flinkCollectionOwner, FlinkCollection, TokenInfoDecoderV1, TokenInfoValidityCheckerV1 } =
-      await deployContracts());
+    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } = await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
-
-    // set tokenInfoDecoder in FlinkCollection
-    FlinkCollection.connect(flinkCollectionOwner).setTokenInfoDecoderAddress(
-      TokenInfoVersion.V1,
-      TokenInfoDecoderV1.address
-    );
-
-    // set tokenInfoValidityChecker in FlinkCollection
-    FlinkCollection.connect(flinkCollectionOwner).setTokenInfoValidityCheckAddress(
-      TokenInfoVersion.V1,
-      TokenInfoValidityCheckerV1.address
-    );
   });
 
   describe("initialize token info use initializeTokenInfoPermit", function () {
@@ -88,7 +75,7 @@ describe("Flink collection test", function () {
       nonce = await nonceGenerator(authorAddress);
     });
 
-    it("success with correct parameters", async function () {
+    it("initialize data", async function () {
       const { msgHash } = generateMessageHash(
         chainId,
         FlinkCollection.address,
@@ -101,7 +88,7 @@ describe("Flink collection test", function () {
 
       var compactSig = await Author1.signMessage(msgHash);
 
-      const tokenInfo = generateTokenInfoVersion1(
+      const tokenInfoInitializationData = generateTokenInfoVersion1(
         tokenId,
         dataVesion,
         data,
@@ -110,40 +97,22 @@ describe("Flink collection test", function () {
         compactSig
       );
 
-      await FlinkCollection.initializeTokenInfoPermit(tokenInfo);
+      await TokenInitializationZone.validateOrder({
+        orderHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+        fulfiller: ethers.constants.AddressZero,
+        offerer: ethers.constants.AddressZero,
+        offer: [],
+        consideration: [],
+        extraData: tokenInfoInitializationData,
+        orderHashes: [],
+        startTime: 1,
+        endTime: 1,
+        zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+      });
 
       const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
-    });
-
-    it("revert with invalid signature", async function () {
-      const { msgHash } = generateMessageHash(
-        chainId,
-        FlinkCollection.address,
-        tokenId,
-        dataVesion,
-        data,
-        tokenUri,
-        nonce
-      );
-
-      //   wrong signature
-      var compactSig =
-        "0x1234567241b2e4a313606d5546331b981834cde1e392b34d889e047461d2603c11c117f88d32be20dc8cd35029179bea977e1ee231c2b5ab0dc8c04f1a55a71d1c";
-
-      const tokenInfo = generateTokenInfoVersion1(
-        tokenId,
-        dataVesion,
-        data,
-        tokenUri,
-        nonce,
-        compactSig
-      );
-
-      await expect(
-        FlinkCollection.initializeTokenInfoPermit(tokenInfo)
-      ).to.be.revertedWith("Invalid signer");
     });
   });
 });

@@ -13,9 +13,7 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
   const t = new Date().getTime().toString();
 
-  return ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes(userAddress + entropy + t)
-  );
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
 }
 
 export function encodeDataV1(
@@ -59,17 +57,19 @@ export function generateTokenInfoVersion1(
 ) {
   const tokenInitializationInfo = defaultAbiCoder.encode(
     [
-      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)",
+      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
     ],
     [
-      {
-        tokenId,
-        version,
-        data,
-        tokenUri,
-        nonce,
-        signature,
-      },
+      [
+        {
+          tokenId,
+          version,
+          data,
+          tokenUri,
+          nonce,
+          signature,
+        },
+      ],
     ]
   );
 
@@ -108,10 +108,7 @@ export function generateMessageHash(
   return { msgHash: ethers.utils.arrayify(msgHash_2) };
 }
 
-export function getDomainSeparator(
-  chainId: number | undefined,
-  contractAddress: string
-): string {
+export function getDomainSeparator(chainId: number | undefined, contractAddress: string): string {
   return ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
