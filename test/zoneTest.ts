@@ -21,7 +21,9 @@ import {
 import { TokenInfoVersion } from "./constants";
 import {
   encodeDataV1,
+  generateBatchTokenInfoVersion1,
   generateMessageHash,
+  generateSingleTokenInfoVersion1,
   generateTokenInfoVersion1,
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
@@ -41,7 +43,8 @@ describe("Flink collection test", function () {
 
   before(async () => {
     // deploy contract
-    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } = await deployContracts());
+    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } =
+      await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
   });
@@ -55,7 +58,11 @@ describe("Flink collection test", function () {
     const volumeNo = 3;
     const chapterNo = 5;
     const wordsAmount = 12345;
-    const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
+    const tokenId = constructTokenId(
+      authorAddress,
+      BigNumber.from(1),
+      BigNumber.from(1)
+    );
     const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
     var nonce: string;
     const dataVesion = TokenInfoVersion.V1;
@@ -88,14 +95,16 @@ describe("Flink collection test", function () {
 
       var compactSig = await Author1.signMessage(msgHash);
 
-      const tokenInfoInitializationData = generateTokenInfoVersion1(
-        tokenId,
-        dataVesion,
-        data,
-        tokenUri,
-        nonce,
-        compactSig
-      );
+      const tokenInfoInitializationData = generateBatchTokenInfoVersion1([
+        {
+          tokenId,
+          version: dataVesion,
+          data,
+          tokenUri,
+          nonce,
+          signature: compactSig,
+        },
+      ]);
 
       await TokenInitializationZone.validateOrder({
         orderHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
@@ -110,9 +119,111 @@ describe("Flink collection test", function () {
         zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
       });
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
+        .initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
+
+    it("initialize data with zoneHash check success", async function () {
+      var data = encodeDataV1(
+        authorAddress,
+        "Test_Token_2",
+        "Test_Token_2",
+        "Test_Token_2",
+        "Test_Token_2",
+        1,
+        1,
+        1
+      );
+
+      var tokenUri = "Test_Token_2";
+
+      const tokenId = constructTokenId(
+        authorAddress,
+        BigNumber.from(2),
+        BigNumber.from(2)
+      );
+
+      const { msgHash } = generateMessageHash(
+        chainId,
+        FlinkCollection.address,
+        tokenId,
+        dataVesion,
+        data,
+        tokenUri,
+        "Test_Token_2"
+      );
+
+      var compactSig = await Author1.signMessage(msgHash);
+
+      const tokenInfoInitializationData = generateSingleTokenInfoVersion1({
+        tokenId,
+        version: dataVesion,
+        data,
+        tokenUri,
+        nonce,
+        signature: compactSig,
+      });
+
+      await TokenInitializationZone.validateOrder({
+        orderHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+        fulfiller: ethers.constants.AddressZero,
+        offerer: ethers.constants.AddressZero,
+        offer: [],
+        consideration: [],
+        extraData: tokenInfoInitializationData,
+        orderHashes: [],
+        startTime: 1,
+        endTime: 1,
+        zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+      });
+
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
+        .initialized;
+
+      expect(tokenInfoInitialized).to.equal(true);
+    });
+
+    // it("initialize data with zoneHash check failure", async function () {
+    //   const { msgHash } = generateMessageHash(
+    //     chainId,
+    //     FlinkCollection.address,
+    //     tokenId,
+    //     dataVesion,
+    //     data,
+    //     tokenUri,
+    //     nonce
+    //   );
+
+    //   var compactSig = await Author1.signMessage(msgHash);
+
+    //   const tokenInfoInitializationData = generateTokenInfoVersion1(
+    //     tokenId,
+    //     dataVesion,
+    //     data,
+    //     tokenUri,
+    //     nonce,
+    //     compactSig
+    //   );
+
+    //   await TokenInitializationZone.validateOrder({
+    //     orderHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+    //     fulfiller: ethers.constants.AddressZero,
+    //     offerer: ethers.constants.AddressZero,
+    //     offer: [],
+    //     consideration: [],
+    //     extraData: tokenInfoInitializationData,
+    //     orderHashes: [],
+    //     startTime: 1,
+    //     endTime: 1,
+    //     zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
+    //   });
+
+    //   const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
+    //     .initialized;
+
+    //   expect(tokenInfoInitialized).to.equal(true);
+    // });
   });
 });

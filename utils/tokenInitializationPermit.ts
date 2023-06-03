@@ -13,7 +13,9 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
   const t = new Date().getTime().toString();
 
-  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
+  return ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes(userAddress + entropy + t)
+  );
 }
 
 export function encodeDataV1(
@@ -47,33 +49,39 @@ export function encodeDataV1(
   return tokenInfo;
 }
 
-export function generateTokenInfoVersion1(
-  tokenId: BigNumber,
-  version: number,
-  data: string,
-  tokenUri: string,
-  nonce: string,
-  signature: string
+export interface TokenInitializationInfo {
+  tokenId: BigNumber;
+  version: number;
+  data: string;
+  tokenUri: string;
+  nonce: string;
+  signature: string;
+}
+
+export function generateSingleTokenInfoVersion1(
+  tokenInitializationInfo: TokenInitializationInfo
 ) {
-  const tokenInitializationInfo = defaultAbiCoder.encode(
+  const encodedSingleTokenInitializationInfo = defaultAbiCoder.encode(
+    [
+      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)",
+    ],
+    [tokenInitializationInfo]
+  );
+
+  return encodedSingleTokenInitializationInfo;
+}
+
+export function generateBatchTokenInfoVersion1(
+  TokenInitializationInfoLs: TokenInitializationInfo[]
+) {
+  const encodedBatchTokenInitializationInfo = defaultAbiCoder.encode(
     [
       "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
     ],
-    [
-      [
-        {
-          tokenId,
-          version,
-          data,
-          tokenUri,
-          nonce,
-          signature,
-        },
-      ],
-    ]
+    [TokenInitializationInfoLs]
   );
 
-  return tokenInitializationInfo;
+  return encodedBatchTokenInitializationInfo;
 }
 
 export function generateMessageHash(
@@ -108,7 +116,10 @@ export function generateMessageHash(
   return { msgHash: ethers.utils.arrayify(msgHash_2) };
 }
 
-export function getDomainSeparator(chainId: number | undefined, contractAddress: string): string {
+export function getDomainSeparator(
+  chainId: number | undefined,
+  contractAddress: string
+): string {
   return ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
