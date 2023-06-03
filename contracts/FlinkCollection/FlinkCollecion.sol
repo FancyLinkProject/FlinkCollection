@@ -231,7 +231,19 @@ contract FlinkCollection is
         }
     }
 
-    // use bytes to pass data, so that transaction triggered by seaport can
+    // get batch token's info
+    function getBatchTokenInfo(
+        uint256[] memory tokenIdLs
+    ) public view returns (TokenInfo[] memory) {
+        TokenInfo[] memory tokenInfoLs = new TokenInfo[](tokenIdLs.length);
+
+        for (uint256 i = 0; i < tokenIdLs.length; i++) {
+            tokenInfoLs[i] = tokenInfo[tokenIdLs[i]];
+        }
+
+        return tokenInfoLs;
+    }
+
     function initializeTokenInfoPermit(
         TokenInitializationInfo memory tokenInitializationInfo
     ) public returns (bool) {
