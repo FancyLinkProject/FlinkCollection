@@ -234,14 +234,16 @@ contract FlinkCollection is
     // get batch token's info
     function getBatchTokenInfo(
         uint256[] memory tokenIdLs
-    ) public view returns (TokenInfo[] memory) {
+    ) public view returns (TokenInfo[] memory, string[] memory) {
         TokenInfo[] memory tokenInfoLs = new TokenInfo[](tokenIdLs.length);
+        string[] memory uriLs = new string[](tokenIdLs.length);
 
         for (uint256 i = 0; i < tokenIdLs.length; i++) {
             tokenInfoLs[i] = tokenInfo[tokenIdLs[i]];
+            uriLs[i] = uri(tokenIdLs[i]);
         }
 
-        return tokenInfoLs;
+        return (tokenInfoLs, uriLs);
     }
 
     function initializeTokenInfoPermit(

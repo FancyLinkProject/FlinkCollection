@@ -33,7 +33,9 @@ interface IFlinkCollection {
 
     function getBatchTokenInfo(
         uint256[] memory tokenIdLs
-    ) external view returns (TokenInfo[] memory);
+    ) external view returns (TokenInfo[] memory, string[] memory uriLs);
+
+    function uri(uint256 tokenId) external view returns (string memory);
 }
 
 contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
@@ -82,6 +84,13 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
                     !BytesLib.equal(
                         tokenInfo.data,
                         tokenInitializationInfo.data
+                    ) ||
+                    tokenInfo.version != tokenInitializationInfo.version ||
+                    !BytesLib.equal(
+                        bytes(
+                            flinkCollection.uri(tokenInitializationInfo.tokenId)
+                        ),
+                        bytes(tokenInitializationInfo.tokenUri)
                     )
                 ) {
                     revert("Token info doesn't match");
@@ -123,8 +132,10 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
             // there is some flinkCollection NFT
             if (count != 0) {
                 // get data of those NFT
-                TokenInfo[] memory tokenInfoLs = flinkCollection
-                    .getBatchTokenInfo(
+                (
+                    TokenInfo[] memory tokenInfoLs,
+                    string[] memory uriLs
+                ) = flinkCollection.getBatchTokenInfo(
                         sliceArray(flinkCollectionNftIdentifierLs, count)
                     );
 
@@ -135,7 +146,8 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
                     bytes32 leaf = keccak256(
                         abi.encode(
                             flinkCollectionNftIdentifierLs[i],
-                            tokenInfoLs[i]
+                            tokenInfoLs[i],
+                            uriLs[i]
                         )
                     );
 

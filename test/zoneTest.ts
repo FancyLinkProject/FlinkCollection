@@ -24,7 +24,6 @@ import {
   generateBatchTokenInfoVersion1,
   generateMessageHash,
   generateSingleTokenInfoVersion1,
-  generateTokenInfoVersion1,
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
 import { constructTokenId } from "../utils/tokenIdentifier";
@@ -43,8 +42,7 @@ describe("Flink collection test", function () {
 
   before(async () => {
     // deploy contract
-    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } =
-      await deployContracts());
+    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } = await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
   });
@@ -58,11 +56,7 @@ describe("Flink collection test", function () {
     const volumeNo = 3;
     const chapterNo = 5;
     const wordsAmount = 12345;
-    const tokenId = constructTokenId(
-      authorAddress,
-      BigNumber.from(1),
-      BigNumber.from(1)
-    );
+    const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
     const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
     var nonce: string;
     const dataVesion = TokenInfoVersion.V1;
@@ -119,8 +113,7 @@ describe("Flink collection test", function () {
         zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
       });
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
@@ -139,11 +132,7 @@ describe("Flink collection test", function () {
 
       var tokenUri = "Test_Token_2";
 
-      const tokenId = constructTokenId(
-        authorAddress,
-        BigNumber.from(2),
-        BigNumber.from(2)
-      );
+      const tokenId = constructTokenId(authorAddress, BigNumber.from(2), BigNumber.from(2));
 
       const { msgHash } = generateMessageHash(
         chainId,
@@ -179,8 +168,7 @@ describe("Flink collection test", function () {
         zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
       });
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
