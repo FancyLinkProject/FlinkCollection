@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title AssetContract
- * AssetContract - A contract for easily creating non-fungible assets on FancyLink.
+ * AssetContract - A contract for easily creating non-fungible assets on OpenSea.
  */
 contract AssetContract is ERC1155Tradable {
     event PermanentURI(string _value, uint256 indexed _id);
@@ -56,8 +56,8 @@ contract AssetContract is ERC1155Tradable {
         }
     }
 
-    function FancyLinkVersion() public pure returns (string memory) {
-        return "1.0.0";
+    function openSeaVersion() public pure returns (string memory) {
+        return "2.1.0";
     }
 
     /**

@@ -2,23 +2,30 @@
 pragma solidity ^0.8.13;
 
 import {ERC20Interface, ERC721Interface, ERC1155Interface} from "./interfaces/AbridgedTokenInterfaces.sol";
-
 import {ContractOffererInterface} from "./interfaces/ContractOffererInterface.sol";
 
 import {ItemType} from "./lib/ConsiderationEnums.sol";
+import {OrderFulfiller} from "./lib/OrderFulfiller.sol";
+import {ReceivedItem, Schema, SpentItem, OrderComponents, AdvancedOrderWithTokenInitializeInfo, OrderParametersWithTokenInitializeInfo, CriteriaResolver, TokenInitializeInfo} from "./lib/ConsiderationStructs.sol";
 
-import {ReceivedItem, Schema, SpentItem} from "./lib/ConsiderationStructs.sol";
+import {OrderValidator} from "./lib/OrderValidator.sol";
+import {CriteriaResolution} from "./lib/CriteriaResolution.sol";
 
 /**
  * @title FlinkCollectionContractOfferer
- * @author 0age
+ * @author Senn
  * @notice FlinkCollectionContractOfferer is a maximally simple contract offerer. It offers
  *         a single item and expects to receive back another single item, and
  *         ignores all parameters supplied to it when previewing or generating
  *         an order. The offered item is placed into this contract as part of
  *         deployment and the corresponding token approvals are set for Seaport.
  */
-abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
+abstract contract FlinkCollectionContractOfferer is
+    ContractOffererInterface,
+    OrderValidator,
+    CriteriaResolution,
+    OrderFulfiller
+{
     error OrderUnavailable();
 
     address public immutable _SEAPORT;
@@ -30,9 +37,10 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
     }
 
     struct ContextData {
-        address receiver;
+        AdvancedOrderWithTokenInitializeInfo advancedOrderWithTokenInitializeInfo;
+        CriteriaResolver[] criteriaResolvers;
+        address recipient;
         Side side;
-        bytes[] uri;
     }
 
     constructor(address seaport, address flinkCollection) {
@@ -57,8 +65,54 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
             ReceivedItem[] memory newConsideration
         )
     {
+        // offer and consideration are not used, place here to prevent unused warning
+        offer;
+        consideration;
+
         // decode context
         ContextData memory contextData = abi.decode(context, (ContextData));
+        AdvancedOrderWithTokenInitializeInfo
+            memory advancedOrderWithTokenInitializeInfo = contextData
+                .advancedOrderWithTokenInitializeInfo;
+
+        OrderParametersWithTokenInitializeInfo
+            memory orderParametersWithTokenInitializeInfo = advancedOrderWithTokenInitializeInfo
+                .orderParametersWithTokenInitializeInfo;
+
+        TokenInitializeInfo memory tokenInitializeInfo = abi.decode(
+            orderParametersWithTokenInitializeInfo.tokenInitializeInfoBytes,
+            (TokenInitializeInfo)
+        );
+
+        CriteriaResolver[] memory criteriaResolvers = contextData
+            .criteriaResolvers;
+
+        // Validate order, update status, and determine fraction to fill.
+        (
+            bytes32 orderHash,
+            uint256 fillNumerator,
+            uint256 fillDenominator
+        ) = _validateOrderAndUpdateStatus(
+                advancedOrderWithTokenInitializeInfo,
+                true
+            );
+
+        // Apply criteria resolvers using generated orders and details arrays.
+        _applyCriteriaResolversAdvanced(
+            advancedOrderWithTokenInitializeInfo,
+            criteriaResolvers
+        );
+
+        SpentItem[] memory spentItems;
+        ReceivedItem[] memory receivedItems;
+
+        (spentItems, receivedItems) = _applyFractions(
+            orderParametersWithTokenInitializeInfo,
+            fillNumerator,
+            fillDenominator,
+            bytes32(0),
+            contextData.recipient
+        );
 
         if (contextData.side == Side.list) {
             //check NFT belongs to flink collection
@@ -79,8 +133,21 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
 
             // transfer res NFT to this
         } else {}
+
+        // Emit an event signifying that the order has been fulfilled.
+        emit OrderFulfilled(
+            orderHash,
+            advancedOrderWithTokenInitializeInfo
+                .orderParametersWithTokenInitializeInfo
+                .offerer,
+            address(0),
+            contextData.recipient,
+            spentItems,
+            receivedItems
+        );
     }
 
+<<<<<<< HEAD
     /**
      * @dev Internal function to validate an order, determine what portion to
      *      fill, and update its status. The desired fill amount is supplied as
@@ -254,6 +321,25 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
         // Return order hash, new numerator and denominator.
         return (orderHash, uint120(numerator), uint120(denominator));
     }
+=======
+    // function getNewOfferAndConsideration(
+    //     AdvancedOrder memory advancedOrder,
+    //     CriteriaResolver[] memory criteriaResolvers
+    // )
+    //     internal
+    //     returns (SpentItem[] memory offer, SpentItem[] memory consideration)
+    // {
+    //     // Validate order, update status, and determine fraction to fill.
+    //     (
+    //         bytes32 orderHash,
+    //         uint256 fillNumerator,
+    //         uint256 fillDenominator
+    //     ) = _validateOrderAndUpdateStatus(advancedOrder, true);
+
+    //     // Apply criteria resolvers using generated orders and details arrays.
+    //     _applyCriteriaResolversAdvanced(advancedOrder, criteriaResolvers);
+    // }
+>>>>>>> 4484662fcea89f66179aa1001fe48655c5a42e0b
 
     function previewOrder(
         address caller,
@@ -294,6 +380,6 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
         schemas[0].id = 1337;
         schemas[0].metadata = new bytes(0);
 
-        return ("TestContractOfferer", schemas);
+        return ("FlinkCollectionContractOfferer", schemas);
     }
 }
