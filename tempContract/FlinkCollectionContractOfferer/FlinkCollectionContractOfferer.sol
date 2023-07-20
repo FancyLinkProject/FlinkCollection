@@ -81,6 +81,180 @@ abstract contract FlinkCollectionContractOfferer is ContractOffererInterface {
         } else {}
     }
 
+    /**
+     * @dev Internal function to validate an order, determine what portion to
+     *      fill, and update its status. The desired fill amount is supplied as
+     *      a fraction, as is the returned amount to fill.
+     *
+     * @param advancedOrder   The order to fulfill as well as the fraction to
+     *                        fill. Note that all offer and consideration
+     *                        amounts must divide with no remainder in order for
+     *                        a partial fill to be valid.
+     * @param revertOnInvalid A boolean indicating whether to revert if the
+     *                        order is invalid due to the time or order status.
+     *
+     * @return orderHash      The order hash.
+     * @return newNumerator   A value indicating the portion of the order that
+     *                        will be filled.
+     * @return newDenominator A value indicating the total size of the order.
+     */
+    function _validateOrderAndUpdateStatus(
+        AdvancedOrder memory advancedOrder,
+        bool revertOnInvalid
+    )
+        internal
+        returns (
+            bytes32 orderHash,
+            uint256 newNumerator,
+            uint256 newDenominator
+        )
+    {
+        // Retrieve the parameters for the order.
+        OrderParameters memory orderParameters = advancedOrder.parameters;
+
+        // Ensure current timestamp falls between order start time and end time.
+        if (
+            !_verifyTime(
+                orderParameters.startTime,
+                orderParameters.endTime,
+                revertOnInvalid
+            )
+        ) {
+            // Assuming an invalid time and no revert, return zeroed out values.
+            return (bytes32(0), 0, 0);
+        }
+
+        // Read numerator and denominator from memory and place on the stack.
+        uint256 numerator = uint256(advancedOrder.numerator);
+        uint256 denominator = uint256(advancedOrder.denominator);
+
+        // If the order is a contract order, return the generated order.
+        if (orderParameters.orderType == OrderType.CONTRACT) {
+            // Ensure that numerator and denominator are both equal to 1.
+            if (numerator != 1 || denominator != 1) {
+                revert BadFraction();
+            }
+
+            return
+                _getGeneratedOrder(
+                    orderParameters,
+                    advancedOrder.extraData,
+                    revertOnInvalid
+                );
+        }
+
+        // Ensure that the supplied numerator and denominator are valid.  The
+        // numerator should not exceed denominator and should not be zero.
+        if (numerator > denominator || numerator == 0) {
+            revert BadFraction();
+        }
+
+        // If attempting partial fill (n < d) check order type & ensure support.
+        if (
+            numerator < denominator &&
+            _doesNotSupportPartialFills(orderParameters.orderType)
+        ) {
+            // Revert if partial fill was attempted on an unsupported order.
+            revert PartialFillsNotEnabledForOrder();
+        }
+
+        // Retrieve current counter and use it w/ parameters to get order hash.
+        orderHash = _assertConsiderationLengthAndGetOrderHash(orderParameters);
+
+        // Retrieve the order status using the derived order hash.
+        OrderStatus storage orderStatus = _orderStatus[orderHash];
+
+        // Ensure order is fillable and is not cancelled.
+        if (
+            !_verifyOrderStatus(
+                orderHash,
+                orderStatus,
+                false, // Allow partially used orders to be filled.
+                revertOnInvalid
+            )
+        ) {
+            // Assuming an invalid order status and no revert, return zero fill.
+            return (orderHash, 0, 0);
+        }
+
+        // If the order is not already validated, verify the supplied signature.
+        if (!orderStatus.isValidated) {
+            _verifySignature(
+                orderParameters.offerer,
+                orderHash,
+                advancedOrder.signature
+            );
+        }
+
+        // Read filled amount as numerator and denominator and put on the stack.
+        uint256 filledNumerator = uint256(orderStatus.numerator);
+        uint256 filledDenominator = uint256(orderStatus.denominator);
+
+        // If order currently has a non-zero denominator it is partially filled.
+        if (filledDenominator != 0) {
+            // If denominator of 1 supplied, fill all remaining amount on order.
+            if (denominator == 1) {
+                // Scale numerator & denominator to match current denominator.
+                numerator = filledDenominator;
+                denominator = filledDenominator;
+            }
+            // Otherwise, if supplied denominator differs from current one...
+            else if (filledDenominator != denominator) {
+                // scale current numerator by the supplied denominator, then...
+                filledNumerator *= denominator;
+
+                // the supplied numerator & denominator by current denominator.
+                numerator *= filledDenominator;
+                denominator *= filledDenominator;
+            }
+
+            // Once adjusted, if current+supplied numerator exceeds denominator:
+            if (filledNumerator + numerator > denominator) {
+                // Reduce current numerator so it + supplied = denominator.
+                numerator = denominator - filledNumerator;
+            }
+
+            // Increment the filled numerator by the new numerator.
+            filledNumerator += numerator;
+
+            // Ensure fractional amounts are below max uint120.
+            if (
+                filledNumerator > type(uint120).max ||
+                denominator > type(uint120).max
+            ) {
+                // Derive greatest common divisor using euclidean algorithm.
+                uint256 scaleDown = _greatestCommonDivisor(
+                    numerator,
+                    _greatestCommonDivisor(filledNumerator, denominator)
+                );
+
+                // Scale all fractional values down by gcd.
+                numerator = numerator / scaleDown;
+                filledNumerator = filledNumerator / scaleDown;
+                denominator = denominator / scaleDown;
+
+                // Perform the overflow check a second time.
+                uint256 maxOverhead = type(uint256).max - type(uint120).max;
+                ((filledNumerator + maxOverhead) & (denominator + maxOverhead));
+            }
+
+            // Update order status and fill amount, packing struct values.
+            orderStatus.isValidated = true;
+            orderStatus.isCancelled = false;
+            orderStatus.numerator = uint120(filledNumerator);
+            orderStatus.denominator = uint120(denominator);
+        } else {
+            // Update order status and fill amount, packing struct values.
+            orderStatus.isValidated = true;
+            orderStatus.isCancelled = false;
+            orderStatus.numerator = uint120(numerator);
+            orderStatus.denominator = uint120(denominator);
+        }
+
+        // Return order hash, new numerator and denominator.
+        return (orderHash, uint120(numerator), uint120(denominator));
+    }
+
     function previewOrder(
         address caller,
         address,

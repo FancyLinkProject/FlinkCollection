@@ -10,7 +10,7 @@ module.exports = {
         version: "0.8.17",
         settings: {
           viaIR: true,
-          optimizer: { enabled: true, runs: 4_294_967_295 },
+          optimizer: { enabled: true, runs: 200 },
           metadata: {
             bytecodeHash: "none",
           },
