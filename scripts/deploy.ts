@@ -8,7 +8,10 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer_1.address);
   console.log("Account balance:", (await deployer_1.getBalance()).toString());
 
-  const FlinkCollectionFactory = await hre.ethers.getContractFactory("FlinkCollection", deployer_1);
+  const FlinkCollectionFactory = await hre.ethers.getContractFactory(
+    "FlinkCollection",
+    deployer_1
+  );
   //   create and initialize checkExecutor using multiContractWallet.address
   const FlinkCollection = await FlinkCollectionFactory.deploy(
     "Flink Collection",
@@ -27,11 +30,17 @@ async function main() {
   const TokenInitializationZone = await TokenInitializationZoneFactory.deploy(
     FlinkCollection.address
   );
-  console.log("TokenInitializationZone address: ", TokenInitializationZone.address);
+  console.log(
+    "TokenInitializationZone address: ",
+    TokenInitializationZone.address
+  );
 
-  const tx = await FlinkCollection.connect(deployer_1).addSharedProxyAddress(seaportAddress14, {
-    gasLimit: 300000,
-  });
+  const tx = await FlinkCollection.connect(deployer_1).addSharedProxyAddress(
+    seaportAddress14,
+    {
+      gasLimit: 300000,
+    }
+  );
 }
 
 main()

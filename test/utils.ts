@@ -3,7 +3,6 @@ import { constructTokenId } from "../utils/tokenIdentifier";
 import {
   encodeDataV1,
   generateMessageHash,
-  generateSingleTokenInfoVersion1,
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
 import { FlinkCollection } from "../typechain-types";
@@ -29,11 +28,9 @@ export async function initializeTokenInfo({
 
   var data = encodeDataV1(
     author.address,
-    tokenUri,
     `fictionName_Token_${tokenIndex.toString()}`,
     `volumeName_Token_${tokenIndex.toString()}`,
     `chapterName_Token_${tokenIndex.toString()}`,
-    1,
     1,
     1
   );

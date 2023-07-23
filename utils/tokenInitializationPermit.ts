@@ -20,28 +20,24 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
 export function encodeDataV1(
   authorAddress: string,
-  tokenUri: string,
   fictionName: string,
   volumeName: string,
   chapterName: string,
   volumeNo: number,
-  chapterNo: number,
-  wordsAmount: number
+  chapterNo: number
 ) {
   const tokenInfo = defaultAbiCoder.encode(
     [
-      "tuple(address author, string tokenUri, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo, uint256 wordsAmount)",
+      "tuple(address author, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo)",
     ],
     [
       {
         author: authorAddress,
-        tokenUri,
         fictionName,
         volumeName,
         chapterName,
         volumeNo,
         chapterNo,
-        wordsAmount,
       },
     ]
   );
@@ -58,14 +54,16 @@ export interface TokenInitializationInfo {
   signature: string;
 }
 
-export function generateSingleTokenInfoVersion1(
-  tokenInitializationInfo: TokenInitializationInfo
+export function generateSingleTokenInitializeInfoVersion1(
+  tokenInitializationInfo: TokenInitializationInfo,
+  proofLs: string[]
 ) {
   const encodedSingleTokenInitializationInfo = defaultAbiCoder.encode(
     [
-      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)",
+      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
+      "bytes32[][]",
     ],
-    [tokenInitializationInfo]
+    [[tokenInitializationInfo], [proofLs]]
   );
 
   return encodedSingleTokenInitializationInfo;
@@ -126,6 +124,24 @@ export function getDomainSeparator(
     ethers.utils.defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
       [DOMAIN_SEPARATOR_TYPEHASH, chainId, contractAddress]
+    )
+  );
+}
+
+export function generateZoneHash(
+  tokenId: string,
+  version: number,
+  data: string,
+  uri: string
+): string {
+  return ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      [
+        "uint256",
+        "tuple(uint256 version, bytes data, bool initialized)",
+        "string",
+      ],
+      [tokenId, { version, data, initialized: true }, uri]
     )
   );
 }

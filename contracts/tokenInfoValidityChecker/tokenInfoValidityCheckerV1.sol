@@ -7,13 +7,11 @@ contract TokenInfoValidityCheckerV1 {
 
     struct TokenInfo {
         address author;
-        string tokenUri;
         string fictionName;
         string volumeName;
         string chapterName;
         uint256 volumeNo;
         uint256 chapterNo;
-        uint256 wordsAmount;
     }
 
     function checkTokenInfoValidity(
