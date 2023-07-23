@@ -71,14 +71,16 @@ export function generateSingleTokenInfoVersion1(
   return encodedSingleTokenInitializationInfo;
 }
 
-export function generateBatchTokenInfoVersion1(
-  TokenInitializationInfoLs: TokenInitializationInfo[]
+export function generateBatchTokenInitializationInfoVersion1(
+  TokenInitializationInfoLs: TokenInitializationInfo[],
+  proofLs: string[][]
 ) {
   const encodedBatchTokenInitializationInfo = defaultAbiCoder.encode(
     [
       "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
+      "bytes32[][]",
     ],
-    [TokenInitializationInfoLs]
+    [TokenInitializationInfoLs, proofLs]
   );
 
   return encodedBatchTokenInitializationInfo;
