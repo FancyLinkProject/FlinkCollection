@@ -1,11 +1,13 @@
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { Wallet } from "ethers";
 import { randomHex } from "../../utils/encoding";
 
 import { faucet } from "../../utils/faucet";
+import { FlinkCollection } from "../../typechain-types";
 
 export async function deployContracts() {
   const { provider } = ethers;
+  let FlinkCollection: FlinkCollection;
 
   const flinkCollectionOwner: Wallet = new ethers.Wallet(randomHex(32), provider);
   await faucet(flinkCollectionOwner.address, provider);
@@ -16,12 +18,13 @@ export async function deployContracts() {
     flinkCollectionOwner
   );
 
-  const FlinkCollection = await FlinkCollectionFactory.deploy(
-    "Flink Collection",
-    "FLK",
-    ethers.constants.AddressZero,
-    "https://temp.com/"
-  );
+  FlinkCollection = (await upgrades.deployProxy(
+    FlinkCollectionFactory,
+    ["Flink Collection", "FLK", ethers.constants.AddressZero, "https://temp.com/"],
+    { kind: "uups", initializer: "initialize" }
+  )) as FlinkCollection;
+
+  console.log(FlinkCollection.address, flinkCollectionOwner.address, await FlinkCollection.owner());
 
   //   deploy tokenInfoDecoder
   let TokenInfoDecoderV1Factory = await ethers.getContractFactory(
@@ -57,3 +60,5 @@ export async function deployContracts() {
     TokenInitializationZone,
   };
 }
+
+deployContracts();

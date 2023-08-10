@@ -2,8 +2,10 @@
 
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./AssetContract.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+import "./AssetContractUpgradeable.sol";
 import "./TokenIdentifiers.sol";
 import "./BaseErrors.sol";
 import "./interfaces/TokenInfoValidityCheck.sol";
@@ -12,8 +14,9 @@ import "./BaseEvents.sol";
 import "./lib/BytesLib.sol";
 
 contract FlinkCollection is
-    AssetContract,
-    ReentrancyGuard,
+    AssetContractUpgradeable,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable,
     BaseErrors,
     BaseEvents
 {
@@ -59,12 +62,15 @@ contract FlinkCollection is
         _;
     }
 
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress,
         string memory _baseURI
-    ) AssetContract(_name, _symbol, _proxyRegistryAddress, _baseURI) {}
+    ) public initializer {
+        __AssetContract_init(_name, _symbol, _proxyRegistryAddress, _baseURI);
+        __UUPSUpgradeable_init();
+    }
 
     /**
      * @dev Allows owner to change the proxy registry
@@ -419,4 +425,6 @@ contract FlinkCollection is
                 abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), this)
             );
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

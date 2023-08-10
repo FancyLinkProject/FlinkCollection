@@ -2,14 +2,14 @@
 
 pragma solidity ^0.8.4;
 
-import "./ERC1155Tradable.sol";
+import "./ERC1155TradableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title AssetContract
  * AssetContract - A contract for easily creating non-fungible assets on FancyLink.
  */
-contract AssetContract is ERC1155Tradable {
+contract AssetContractUpgradeable is ERC1155TradableUpgradeable {
     event PermanentURI(string _value, uint256 indexed _id);
 
     uint256 constant TOKEN_SUPPLY_CAP = 1;
@@ -45,12 +45,13 @@ contract AssetContract is ERC1155Tradable {
         _;
     }
 
-    constructor(
+    function __AssetContract_init(
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress,
         string memory _baseURI
-    ) ERC1155Tradable(_name, _symbol, _proxyRegistryAddress) {
+    ) public onlyInitializing {
+        __ERC1155Tradable_init(_name, _symbol, _proxyRegistryAddress);
         if (bytes(_baseURI).length > 0) {
             setBaseURI(_baseURI);
         }

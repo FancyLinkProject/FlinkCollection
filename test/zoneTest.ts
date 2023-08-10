@@ -43,8 +43,7 @@ describe("Flink collection test", function () {
 
   before(async () => {
     // deploy contract
-    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } =
-      await deployContracts());
+    ({ flinkCollectionOwner, FlinkCollection, TokenInitializationZone } = await deployContracts());
     await faucet(Author1.address, provider);
     await faucet(tokenInfoInitializer.address, provider);
   });
@@ -58,11 +57,7 @@ describe("Flink collection test", function () {
     const volumeNo = 3;
     const chapterNo = 5;
     const wordsAmount = 12345;
-    const tokenId = constructTokenId(
-      authorAddress,
-      BigNumber.from(1),
-      BigNumber.from(1)
-    );
+    const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
     const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
 
     const dataVersion = TokenInfoVersion.V1;
@@ -91,20 +86,19 @@ describe("Flink collection test", function () {
 
       var compactSig = await Author1.signMessage(msgHash);
 
-      const tokenInfoInitializationData =
-        generateBatchTokenInitializationInfoVersion1(
-          [
-            {
-              tokenId,
-              version: dataVersion,
-              data,
-              tokenUri,
-              nonce,
-              signature: compactSig,
-            },
-          ],
-          [[]]
-        );
+      const tokenInfoInitializationData = generateBatchTokenInitializationInfoVersion1(
+        [
+          {
+            tokenId,
+            version: dataVersion,
+            data,
+            tokenUri,
+            nonce,
+            signature: compactSig,
+          },
+        ],
+        [[]]
+      );
 
       await TokenInitializationZone.validateOrder({
         orderHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
@@ -119,8 +113,7 @@ describe("Flink collection test", function () {
         zoneHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("")),
       });
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
@@ -128,22 +121,11 @@ describe("Flink collection test", function () {
     it("initialize data with zoneHash check success", async function () {
       const nonce = await nonceGenerator(authorAddress);
 
-      var data = encodeDataV1(
-        authorAddress,
-        "Test_Token_2",
-        "Test_Token_2",
-        "Test_Token_2",
-        1,
-        1
-      );
+      var data = encodeDataV1(authorAddress, "Test_Token_2", "Test_Token_2", "Test_Token_2", 1, 1);
 
       var tokenUri = "Test_Token_2";
 
-      const tokenId = constructTokenId(
-        authorAddress,
-        BigNumber.from(2),
-        BigNumber.from(2)
-      );
+      const tokenId = constructTokenId(authorAddress, BigNumber.from(2), BigNumber.from(2));
 
       const { msgHash } = generateMessageHash(
         chainId,
@@ -157,18 +139,17 @@ describe("Flink collection test", function () {
 
       var compactSig = await Author1.signMessage(msgHash);
 
-      const tokenInfoInitializationData =
-        generateSingleTokenInitializeInfoVersion1(
-          {
-            tokenId,
-            version: dataVersion,
-            data,
-            tokenUri,
-            nonce,
-            signature: compactSig,
-          },
-          []
-        );
+      const tokenInfoInitializationData = generateSingleTokenInitializeInfoVersion1(
+        {
+          tokenId,
+          version: dataVersion,
+          data,
+          tokenUri,
+          nonce,
+          signature: compactSig,
+        },
+        []
+      );
 
       //   construct offer
       const offer = [
@@ -196,8 +177,7 @@ describe("Flink collection test", function () {
         zoneHash: zoneHash,
       });
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(true);
     });
@@ -205,22 +185,11 @@ describe("Flink collection test", function () {
     it("initialize data with zoneHash check failure", async function () {
       const nonce = await nonceGenerator(authorAddress);
 
-      var data = encodeDataV1(
-        authorAddress,
-        "Test_Token_3",
-        "Test_Token_3",
-        "Test_Token_3",
-        1,
-        2
-      );
+      var data = encodeDataV1(authorAddress, "Test_Token_3", "Test_Token_3", "Test_Token_3", 1, 2);
 
       var tokenUri = "Test_Token_3";
 
-      const tokenId = constructTokenId(
-        authorAddress,
-        BigNumber.from(3),
-        BigNumber.from(2)
-      );
+      const tokenId = constructTokenId(authorAddress, BigNumber.from(3), BigNumber.from(2));
 
       const { msgHash } = generateMessageHash(
         chainId,
@@ -234,18 +203,17 @@ describe("Flink collection test", function () {
 
       var compactSig = await Author1.signMessage(msgHash);
 
-      const tokenInfoInitializationData =
-        generateSingleTokenInitializeInfoVersion1(
-          {
-            tokenId,
-            version: dataVersion,
-            data,
-            tokenUri,
-            nonce,
-            signature: compactSig,
-          },
-          []
-        );
+      const tokenInfoInitializationData = generateSingleTokenInitializeInfoVersion1(
+        {
+          tokenId,
+          version: dataVersion,
+          data,
+          tokenUri,
+          nonce,
+          signature: compactSig,
+        },
+        []
+      );
 
       //   construct offer
       const offer = [
@@ -276,8 +244,7 @@ describe("Flink collection test", function () {
         })
       ).to.revertedWithCustomError(TokenInitializationZone, "InvalidProof");
 
-      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId))
-        .initialized;
+      const tokenInfoInitialized = (await FlinkCollection.tokenInfo(tokenId)).initialized;
 
       expect(tokenInfoInitialized).to.equal(false);
     });
