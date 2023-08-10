@@ -16,8 +16,7 @@ contract AssetContractUpgradeable is ERC1155TradableUpgradeable {
 
     string public baseURI;
 
-    // Optional mapping for token URIs
-    mapping(uint256 => string) private _tokenURI;
+    mapping(uint256 => string) public _tokenURI;
 
     // Mapping for whether a token URI is set permanently
     mapping(uint256 => bool) private _isPermanentURI;
@@ -277,5 +276,9 @@ contract AssetContractUpgradeable is ERC1155TradableUpgradeable {
         _isPermanentURI[_id] = true;
         _setURI(_id, _uri);
         emit PermanentURI(_uri, _id);
+    }
+
+    function tokenUriSetted(uint256 _id) public view returns (bool) {
+        return !(bytes(_tokenURI[_id]).length == 0);
     }
 }

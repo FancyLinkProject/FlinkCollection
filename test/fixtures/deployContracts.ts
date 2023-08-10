@@ -24,8 +24,6 @@ export async function deployContracts() {
     { kind: "uups", initializer: "initialize" }
   )) as FlinkCollection;
 
-  console.log(FlinkCollection.address, flinkCollectionOwner.address, await FlinkCollection.owner());
-
   //   deploy tokenInfoDecoder
   let TokenInfoDecoderV1Factory = await ethers.getContractFactory(
     "TokenInfoDecoderV1",

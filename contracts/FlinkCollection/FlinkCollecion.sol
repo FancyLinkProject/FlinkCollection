@@ -46,7 +46,7 @@ contract FlinkCollection is
     modifier creatorOnly(uint256 _id) {
         require(
             _isCreatorOrProxy(_id, _msgSender()),
-            "AssetContractShared#creatorOnly: ONLY_CREATOR_ALLOWED"
+            "FLK 100"
         );
         _;
     }
@@ -57,7 +57,19 @@ contract FlinkCollection is
     modifier onlyFullTokenOwner(uint256 _id) {
         require(
             _ownsTokenAmount(_msgSender(), _id, _id.tokenMaxSupply()),
-            "AssetContractShared#onlyFullTokenOwner: ONLY_FULL_TOKEN_OWNER_ALLOWED"
+            "FLK 101"
+        );
+        _;
+    }
+
+    /**
+     * @dev Require the caller to own the full supply of the token
+     */
+    modifier onlyFullTokenOwnerOrNotInitialized(uint256 _id) {
+        require(
+            _ownsTokenAmount(_msgSender(), _id, _id.tokenMaxSupply()) ||
+                ((!tokenUriSetted(_id)) && (!checkTokenInitialized(_id))),
+            "FLK 102"
         );
         _;
     }
@@ -113,7 +125,7 @@ contract FlinkCollection is
         for (uint256 i = 0; i < _ids.length; i++) {
             require(
                 _isCreatorOrProxy(_ids[i], _msgSender()),
-                "AssetContractShared#_batchMint: ONLY_CREATOR_ALLOWED"
+                "FLK 100"
             );
         }
         _batchMint(_to, _ids, _quantities, _data);
@@ -137,7 +149,7 @@ contract FlinkCollection is
         override
         creatorOnly(_id)
         onlyImpermanentURI(_id)
-        onlyFullTokenOwner(_id)
+        onlyFullTokenOwnerOrNotInitialized(_id)
     {
         _setURI(_id, _uri);
     }
@@ -153,7 +165,7 @@ contract FlinkCollection is
         override
         creatorOnly(_id)
         onlyImpermanentURI(_id)
-        onlyFullTokenOwner(_id)
+        onlyFullTokenOwnerOrNotInitialized(_id)
     {
         _setPermanentURI(_id, _uri);
     }
@@ -166,7 +178,7 @@ contract FlinkCollection is
     function setCreator(uint256 _id, address _to) public creatorOnly(_id) {
         require(
             _to != address(0),
-            "AssetContractShared#setCreator: INVALID_ADDRESS."
+            "FLK 103"
         );
         _creatorOverride[_id] = _to;
         emit CreatorChanged(_id, _to);
@@ -200,7 +212,7 @@ contract FlinkCollection is
     function _requireMintable(address _address, uint256 _id) internal view {
         require(
             _isCreatorOrProxy(_id, _address),
-            "AssetContractShared#_requireMintable: ONLY_CREATOR_ALLOWED"
+            "FLK 100"
         );
     }
 
@@ -257,11 +269,11 @@ contract FlinkCollection is
     ) public returns (bool) {
         uint256 tokenId = tokenInitializationInfo.tokenId;
 
-        require(!checkTokenInitialized(tokenId), "Already initialized");
+        require(!checkTokenInitialized(tokenId), "FLK 104");
 
         require(
             signatureValidity(tokenInitializationInfo.signature),
-            "invalid signature"
+            "FLK 105"
         );
 
         // check token info validity
@@ -275,14 +287,14 @@ contract FlinkCollection is
                     tokenInitializationInfo.version,
                     tokenInitializationInfo.data
                 );
-            require(passValidityCheck, "Token Info error");
+            require(passValidityCheck, "FLK 106");
         }
 
         // recover signer
         address signer = recoverSigner(tokenInitializationInfo);
 
         // signer should be the creator of the tokenId
-        require(signer == creator(tokenId), "Invalid signer");
+        require(signer == creator(tokenId), "FLK 107");
 
         // creator should own the total amount of token
         // require(
@@ -298,7 +310,7 @@ contract FlinkCollection is
         if (bytes(tokenInitializationInfo.tokenUri).length > 0) {
             require(
                 !isPermanentURI(tokenId),
-                "AssetContract#onlyImpermanentURI: URI_CANNOT_BE_CHANGED"
+                "FLK 108"
             );
             _setURI(tokenId, string(tokenInitializationInfo.tokenUri));
         }
@@ -333,13 +345,13 @@ contract FlinkCollection is
 
         require(
             signatureValidity(tokenInitializationInfo.signature),
-            "invalid signature"
+            "FLK 109"
         );
 
         // recover signer
         address signer = recoverSigner(tokenInitializationInfo);
 
-        require(signer == msg.sender, "Only signer can cancel signature");
+        require(signer == msg.sender, "FLK 110");
 
         signatureStatus[tokenInitializationInfo.signature].cancelled = true;
 
@@ -362,7 +374,7 @@ contract FlinkCollection is
         uint256 version,
         address _tokenDataDecoder
     ) public onlyOwner {
-        require(versionInfoDecoder[version] == address(0), "Already set");
+        require(versionInfoDecoder[version] == address(0), "FLK 111");
         versionInfoDecoder[version] = _tokenDataDecoder;
         emit TokenDataDecoderChanged(version, _tokenDataDecoder);
     }
