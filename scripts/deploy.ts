@@ -17,7 +17,6 @@ async function main() {
     { kind: "uups", initializer: "initialize" }
   )) as FlinkCollection;
   console.log("FlinkCollection address: ", FlinkCollection.address);
-  
 
   //   deploy TokenInitializationZone
   const TokenInitializationZoneFactory = await hre.ethers.getContractFactory(

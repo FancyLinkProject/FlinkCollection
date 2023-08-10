@@ -232,6 +232,9 @@ async function main() {
     BigNumber.from(1)
   ).toString();
 
+  console.log({rawNftIdentifierOrCriteria})
+  process.exit()
+
   const data: OrderData = {
     chainId,
     orderType: 3,
