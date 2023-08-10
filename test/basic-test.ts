@@ -150,7 +150,7 @@ describe("Flink collection test", function () {
       );
 
       await expect(FlinkCollection.initializeTokenInfoPermit(tokenInfo)).to.be.revertedWith(
-        "Invalid signer"
+        "FLK 107"
       );
     });
   });

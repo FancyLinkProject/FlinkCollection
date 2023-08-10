@@ -20,7 +20,7 @@ export async function deployContracts() {
 
   FlinkCollection = (await upgrades.deployProxy(
     FlinkCollectionFactory,
-    ["Flink Collection", "FLK", ethers.constants.AddressZero, "https://temp.com/"],
+    ["Flink Collection", "FLK", ethers.constants.AddressZero, "https://metadata.fancylink.xyz/"],
     { kind: "uups", initializer: "initialize" }
   )) as FlinkCollection;
 

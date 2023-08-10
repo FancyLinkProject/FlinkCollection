@@ -5,12 +5,18 @@ require("dotenv").config();
 
 module.exports = {
   solidity: {
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100,
+      },
+    },
     compilers: [
       {
         version: "0.8.17",
         settings: {
           viaIR: true,
-          optimizer: { enabled: true, runs: 200 },
+          optimizer: { enabled: true, runs: 100 },
           metadata: {
             bytecodeHash: "none",
           },
@@ -25,7 +31,7 @@ module.exports = {
   },
 
   networks: {
-    hardhat: { allowUnlimitedContractSize: false },
+    hardhat: { allowUnlimitedContractSize: true },
     goerli: {
       chainId: 5,
       url: process.env.ALCHEMY_API,
@@ -37,7 +43,6 @@ module.exports = {
         process.env.ACCOUNT_5 as string,
       ],
       gas: 10000000,
-      //   allowUnlimitedContractSize: true,
     },
     mumbai: {
       chainId: 80001,
@@ -50,7 +55,6 @@ module.exports = {
         process.env.ACCOUNT_5 as string,
       ],
       gas: 1000000,
-      //   allowUnlimitedContractSize: true,
     },
   },
 };

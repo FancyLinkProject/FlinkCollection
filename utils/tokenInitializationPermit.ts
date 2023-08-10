@@ -155,3 +155,4 @@ export function generateTokenInfoVersion1(
     signature: compactSig,
   };
 }
+

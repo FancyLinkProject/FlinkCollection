@@ -1,5 +1,6 @@
 export const seaportAddress = "0x00000000006c3852cbef3e08e8df289169ede581";
 export const seaportAddress14 = "0x00000000000001ad428e4906aE43D8F9852d0dD6";
+export const seaportAddress15 = "0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC";
 
 // seaport 1.1's domainSeparator
 export const domainSeparatorDict = {

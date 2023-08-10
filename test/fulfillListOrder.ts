@@ -1,6 +1,11 @@
 import { ethers } from "hardhat";
 import hre from "hardhat";
-import { flinkCollection, seaportAddress14, seaportOrderType } from "../constants/constants";
+import {
+  flinkCollection,
+  seaportAddress14,
+  seaportAddress15,
+  seaportOrderType,
+} from "../constants/constants";
 const fs = require("fs");
 import { OrderComponents } from "../types/type";
 import { Wallet, Contract, BigNumber } from "ethers";
@@ -19,6 +24,7 @@ import { constructTokenId } from "../utils/tokenIdentifier";
 import {
   encodeDataV1,
   generateMessageHash,
+  generateSingleTokenInitializeInfoVersion1,
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
 import { generateTokenInfoVersion1 } from "../utils/tokenInitializationPermit";
@@ -34,9 +40,9 @@ const signOrder = async (
 ) => {
   const domainData = {
     name: "Seaport",
-    version: "1.4",
+    version: "1.5",
     chainId: chainId,
-    verifyingContract: seaportAddress14,
+    verifyingContract: seaportAddress15,
   };
 
   const signature = await signer._signTypedData(domainData, seaportOrderType, orderComponents);
@@ -101,10 +107,9 @@ async function generateBatchTestListData(data: OrderData, seaportContract: Seapo
   //   平台服务费
   const platformServiceFee = (price * platformServiceFeePercent).toFixed(15);
   //   买家所得
-  const buyerPayment = price - Number(royalty) - Number(platformServiceFee);
+  const buyerPayment = (price - Number(royalty) - Number(platformServiceFee)).toFixed(15);
 
   //  构建consideration
-
   const consideration = [
     // 支付给买家的
     getItemNative({
@@ -173,13 +178,11 @@ async function generateTokenInfoInitializationData(
 ) {
   var data = encodeDataV1(
     Author.address,
-    tokenUri,
     fictionName,
     volumeName,
     chapterName,
     volumeNo,
-    chapterNo,
-    wordsAmount
+    chapterNo
   );
   const nonce = await nonceGenerator(Author.address);
 
@@ -208,23 +211,23 @@ async function generateTokenInfoInitializationData(
 }
 
 async function main() {
-  const [FancyLinkDev1, FancyLinkDev2, account_3, account_4] = await hre.ethers.getSigners();
+  const [FancyLinkDeployer, FancyLinkDev2, account_3, account_4] = await hre.ethers.getSigners();
 
   // 获取seaport abi，构建seaport合约对象
   let seaportAbiRawdata = await fs.readFileSync("./abi/seaport.json");
   let seaportAbi = JSON.parse(seaportAbiRawdata);
   const seaportContract = (await ethers.getContractAt(
     seaportAbi,
-    seaportAddress14
+    seaportAddress15
   )) as any as Seaport;
 
-  const flinkContractAddress = "0x018105676e72A3063185045ff42F4Be8B21e66A6";
-  const zone = "0xb4ac7C4B8FbF9509658e1172DA91E64C047D55A7";
+  const flinkContractAddress = "0x4345983dd8E5f7AF8106964F644E1D9f1f8eDfC6";
+  const zone = "0x86093ac33176D4CdEE2981269913c29a2b6c0BF9";
 
   const platformAddress = "0x176cc044b7f181C509A1d145E6DA2877B6c88162";
   const chainId = 80001;
   const rawNftIdentifierOrCriteria = constructTokenId(
-    FancyLinkDev1.address,
+    FancyLinkDev2.address,
     BigNumber.from(2),
     BigNumber.from(1)
   ).toString();
@@ -234,12 +237,12 @@ async function main() {
     orderType: 3,
     rawNftIdentifierOrCriteria,
     nftAmount: 1,
-    price: 0.01,
+    price: 0.0001,
     royaltyPercent: 0.06,
     platformServiceFeePercent: 0.01,
-    offerer: FancyLinkDev1,
+    offerer: FancyLinkDev2,
     buyer: FancyLinkDev2,
-    author: FancyLinkDev1,
+    author: FancyLinkDev2,
     platformAddress,
     flinkContractAddress,
     zone,
@@ -256,8 +259,8 @@ async function main() {
   const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
 
   //generate token initialization data
-  const extraData = await generateTokenInfoInitializationData(
-    FancyLinkDev1,
+  const nftInitializationData = await generateTokenInfoInitializationData(
+    FancyLinkDev2,
     flinkContractAddress,
     BigNumber.from(rawNftIdentifierOrCriteria),
     chainId,
@@ -270,6 +273,9 @@ async function main() {
     chapterNo,
     wordsAmount
   );
+
+  const extraData = generateSingleTokenInitializeInfoVersion1(nftInitializationData, []);
+
   const newOrder = Object.assign(order, { numerator: 1, denominator: 1, extraData: extraData });
 
   fs.writeFile("generatedOrder.json", JSON.stringify(order), function (err: any) {
@@ -277,11 +283,11 @@ async function main() {
     console.log("complete");
   });
 
-  const balance = await FancyLinkDev2.getBalance();
+  const balance = await account_3.getBalance();
 
   //  fullfill using signed order
   const tx = await seaportContract
-    .connect(FancyLinkDev2)
+    .connect(account_3)
     .fulfillAdvancedOrder(newOrder, [], toKey(0), FancyLinkDev2.address, {
       value,
       gasLimit: 1000000,
