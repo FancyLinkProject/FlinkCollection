@@ -8,8 +8,6 @@ import {BytesLib} from "./lib/BytesLib.sol";
 import {CriteriaResolutionErrors} from "./interfaces/CriteriaResolutionErrors.sol";
 import {ZeroBytes} from "./lib/ZoneConstants.sol";
 
-import {console} from "hardhat/console.sol";
-
 struct TokenInfo {
     uint256 version;
     bytes data;
@@ -79,25 +77,6 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
                     revert("Failed to initialize token info");
                 }
             }
-            // else {
-            //     // if token has already been initialized, check whether the token data equals data specified by tokenInitializationInfo
-            //     // if not equal, revert
-            //     if (
-            //         !BytesLib.equal(
-            //             tokenInfo.data,
-            //             tokenInitializationInfo.data
-            //         ) ||
-            //         tokenInfo.version != tokenInitializationInfo.version ||
-            //         !BytesLib.equal(
-            //             bytes(
-            //                 flinkCollection.uri(tokenInitializationInfo.tokenId)
-            //             ),
-            //             bytes(tokenInitializationInfo.tokenUri)
-            //         )
-            //     ) {
-            //         revert("Token info doesn't match");
-            //     }
-            // }
         }
 
         // check whether the token info in the order satisfies the offerer's intention

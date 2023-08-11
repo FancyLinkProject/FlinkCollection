@@ -44,10 +44,7 @@ contract FlinkCollection is
      * @dev Require msg.sender to be the creator of the token id
      */
     modifier creatorOnly(uint256 _id) {
-        require(
-            _isCreatorOrProxy(_id, _msgSender()),
-            "FLK 100"
-        );
+        require(_isCreatorOrProxy(_id, _msgSender()), "FLK 100");
         _;
     }
 
@@ -66,12 +63,17 @@ contract FlinkCollection is
      * @dev Require the caller to own the full supply of the token
      */
     modifier onlyFullTokenOwnerOrNotInitialized(uint256 _id) {
-        require(
-            _ownsTokenAmount(_msgSender(), _id, _id.tokenMaxSupply()) ||
-                ((!tokenUriSetted(_id)) && (!checkTokenInitialized(_id))),
-            "FLK 102"
-        );
+        require(ownFullTokenOrNotInitialized(_msgSender(), _id), "FLK 102");
         _;
+    }
+
+    function ownFullTokenOrNotInitialized(
+        address _user,
+        uint256 _tokenId
+    ) private view returns (bool) {
+        return
+            _ownsTokenAmount(_user, _tokenId, _tokenId.tokenMaxSupply()) ||
+            ((!tokenUriSetted(_tokenId)) && (!checkTokenInitialized(_tokenId)));
     }
 
     function initialize(
@@ -123,10 +125,7 @@ contract FlinkCollection is
         bytes memory _data
     ) public override nonReentrant {
         for (uint256 i = 0; i < _ids.length; i++) {
-            require(
-                _isCreatorOrProxy(_ids[i], _msgSender()),
-                "FLK 100"
-            );
+            require(_isCreatorOrProxy(_ids[i], _msgSender()), "FLK 100");
         }
         _batchMint(_to, _ids, _quantities, _data);
     }
@@ -176,10 +175,7 @@ contract FlinkCollection is
      * @param _id  Token IDs to change creator of
      */
     function setCreator(uint256 _id, address _to) public creatorOnly(_id) {
-        require(
-            _to != address(0),
-            "FLK 103"
-        );
+        require(_to != address(0), "FLK 103");
         _creatorOverride[_id] = _to;
         emit CreatorChanged(_id, _to);
     }
@@ -210,10 +206,7 @@ contract FlinkCollection is
     }
 
     function _requireMintable(address _address, uint256 _id) internal view {
-        require(
-            _isCreatorOrProxy(_id, _address),
-            "FLK 100"
-        );
+        require(_isCreatorOrProxy(_id, _address), "FLK 100");
     }
 
     function _remainingSupply(
@@ -242,11 +235,7 @@ contract FlinkCollection is
     }
 
     function checkTokenInitialized(uint256 tokenId) public view returns (bool) {
-        if (!tokenInfo[tokenId].initialized) {
-            return false;
-        } else {
-            return true;
-        }
+        return tokenInfo[tokenId].initialized;
     }
 
     // get batch token's info
@@ -296,22 +285,12 @@ contract FlinkCollection is
         // signer should be the creator of the tokenId
         require(signer == creator(tokenId), "FLK 107");
 
-        // creator should own the total amount of token
-        // require(
-        //     _ownsTokenAmount(
-        //         creator(tokenId),
-        //         tokenId,
-        //         tokenId.tokenMaxSupply()
-        //     ),
-        //     "Should own total token"
-        // );
+        // creator should own the total amount of token, or the token hasn't been initialized
+        require(ownFullTokenOrNotInitialized(signer, tokenId), "FLK 102");
 
         // if creator assigns tokenUri, then set tokenUri
         if (bytes(tokenInitializationInfo.tokenUri).length > 0) {
-            require(
-                !isPermanentURI(tokenId),
-                "FLK 108"
-            );
+            require(!isPermanentURI(tokenId), "FLK 108");
             _setURI(tokenId, string(tokenInitializationInfo.tokenUri));
         }
 
