@@ -28,7 +28,7 @@ import {
   nonceGenerator,
 } from "../utils/tokenInitializationPermit";
 import { generateTokenInfoVersion1 } from "../utils/tokenInitializationPermit";
-import { TokenInfoVersion } from "./constants";
+import { TokenInfoVersion } from "../test/constants";
 import { Ownable } from "../typechain-types";
 import { Seaport } from "../typechain-types/Seaport";
 
