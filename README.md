@@ -1,6 +1,6 @@
 # FancyLink Platform Smart Contract
 
-* [ ] This is the smart contract for the FancyLink, a web3 platform for publishing and reading novels as NFTs. This smart contract is based on opensea's opensea collection.
+[ ]  This is the smart contract for the FancyLink, a web3 platform for publishing and reading novels as NFTs. This smart contract is based on opensea's opensea collection.
 
 ## Contracts
 
