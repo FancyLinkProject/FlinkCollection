@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import crypto from "crypto";
 import { DOMAIN_SEPARATOR_TYPEHASH } from "./constants";
 import { BigNumber } from "ethers";
+import { TokenInfoVersion } from "../test/constants";
 
 // get a random nonce
 export async function nonceGenerator(userAddress: string): Promise<string> {
@@ -13,9 +14,7 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
   const t = new Date().getTime().toString();
 
-  return ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes(userAddress + entropy + t)
-  );
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
 }
 
 export function encodeDataV1(
@@ -116,10 +115,7 @@ export function generateMessageHash(
   return { msgHash: ethers.utils.arrayify(msgHash_2) };
 }
 
-export function getDomainSeparator(
-  chainId: number | undefined,
-  contractAddress: string
-): string {
+export function getDomainSeparator(chainId: number | undefined, contractAddress: string): string {
   return ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
@@ -136,12 +132,27 @@ export function generateZoneHash(
 ): string {
   return ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
-      [
-        "uint256",
-        "tuple(uint256 version, bytes data, bool initialized)",
-        "string",
-      ],
+      ["uint256", "tuple(uint256 version, bytes data, bool initialized)", "string"],
       [tokenId, { version, data, initialized: true }, uri]
     )
   );
 }
+
+export function generateTokenInfoVersion1(
+  tokenId: BigNumber,
+  dataVersion: TokenInfoVersion,
+  data: string,
+  tokenUri:string,
+  nonce:string,
+  compactSig:string
+) {
+  return {
+    tokenId,
+    version: dataVersion,
+    data,
+    tokenUri,
+    nonce,
+    signature: compactSig,
+  };
+}
+

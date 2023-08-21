@@ -60,35 +60,30 @@ describe("Flink collection test", function () {
   });
 
   describe("initialize token info use initializeTokenInfoPermit", function () {
-    var initialzationData;
-    const authorAddress = Author1.address;
-    const fictionName = "Fancy";
-    const volumeName = "Imagination";
-    const chapterName = "Challenge";
-    const volumeNo = 3;
-    const chapterNo = 5;
-    const wordsAmount = 12345;
-    const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
-    const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
-    var nonce: string;
-    const dataVesion = TokenInfoVersion.V1;
-
-    var data = encodeDataV1(
-      authorAddress,
-      tokenUri,
-      fictionName,
-      volumeName,
-      chapterName,
-      volumeNo,
-      chapterNo,
-      wordsAmount
-    );
-
-    this.beforeAll(async () => {
-      nonce = await nonceGenerator(authorAddress);
-    });
-
     it("success with correct parameters", async function () {
+      const authorAddress = Author1.address;
+      const fictionName = "Fancy";
+      const volumeName = "Imagination";
+      const chapterName = "Challenge";
+      const volumeNo = 3;
+      const chapterNo = 5;
+      const wordsAmount = 12345;
+      const tokenId = constructTokenId(authorAddress, BigNumber.from(1), BigNumber.from(1));
+      const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
+      var nonce: string;
+      const dataVesion = TokenInfoVersion.V1;
+
+      var data = encodeDataV1(
+        authorAddress,
+        fictionName,
+        volumeName,
+        chapterName,
+        volumeNo,
+        chapterNo
+      );
+
+      nonce = await nonceGenerator(authorAddress);
+
       const { msgHash } = generateMessageHash(
         chainId,
         FlinkCollection.address,
@@ -118,15 +113,28 @@ describe("Flink collection test", function () {
     });
 
     it("revert with invalid signature", async function () {
-      const { msgHash } = generateMessageHash(
-        chainId,
-        FlinkCollection.address,
-        tokenId,
-        dataVesion,
-        data,
-        tokenUri,
-        nonce
+      const authorAddress = Author1.address;
+      const fictionName = "Fancy";
+      const volumeName = "Imagination";
+      const chapterName = "Challenge";
+      const volumeNo = 3;
+      const chapterNo = 5;
+      const wordsAmount = 12345;
+      const tokenId = constructTokenId(authorAddress, BigNumber.from(2), BigNumber.from(1));
+      const tokenUri = "https://www.fancylink/nft/metadata/0x1/";
+      var nonce: string;
+      const dataVesion = TokenInfoVersion.V1;
+
+      var data = encodeDataV1(
+        authorAddress,
+        fictionName,
+        volumeName,
+        chapterName,
+        volumeNo,
+        chapterNo
       );
+
+      nonce = await nonceGenerator(authorAddress);
 
       //   wrong signature
       var compactSig =
@@ -141,9 +149,9 @@ describe("Flink collection test", function () {
         compactSig
       );
 
-      await expect(
-        FlinkCollection.initializeTokenInfoPermit(tokenInfo)
-      ).to.be.revertedWith("Invalid signer");
+      await expect(FlinkCollection.initializeTokenInfoPermit(tokenInfo)).to.be.revertedWith(
+        "FLK 107"
+      );
     });
   });
 });

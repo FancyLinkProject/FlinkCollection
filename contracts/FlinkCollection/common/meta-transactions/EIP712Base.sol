@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.4;
 
-import { Initializable } from "./Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract EIP712Base is Initializable {
     struct EIP712Domain {

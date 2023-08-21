@@ -2,22 +2,21 @@
 
 pragma solidity ^0.8.4;
 
-import "./ERC1155Tradable.sol";
+import "./ERC1155TradableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title AssetContract
  * AssetContract - A contract for easily creating non-fungible assets on FancyLink.
  */
-contract AssetContract is ERC1155Tradable {
+contract AssetContractUpgradeable is ERC1155TradableUpgradeable {
     event PermanentURI(string _value, uint256 indexed _id);
 
     uint256 constant TOKEN_SUPPLY_CAP = 1;
 
     string public baseURI;
 
-    // Optional mapping for token URIs
-    mapping(uint256 => string) private _tokenURI;
+    mapping(uint256 => string) public _tokenURI;
 
     // Mapping for whether a token URI is set permanently
     mapping(uint256 => bool) private _isPermanentURI;
@@ -45,12 +44,13 @@ contract AssetContract is ERC1155Tradable {
         _;
     }
 
-    constructor(
+    function __AssetContract_init(
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress,
         string memory _baseURI
-    ) ERC1155Tradable(_name, _symbol, _proxyRegistryAddress) {
+    ) public onlyInitializing {
+        __ERC1155Tradable_init(_name, _symbol, _proxyRegistryAddress);
         if (bytes(_baseURI).length > 0) {
             setBaseURI(_baseURI);
         }
@@ -276,5 +276,9 @@ contract AssetContract is ERC1155Tradable {
         _isPermanentURI[_id] = true;
         _setURI(_id, _uri);
         emit PermanentURI(_uri, _id);
+    }
+
+    function tokenUriSetted(uint256 _id) public view returns (bool) {
+        return !(bytes(_tokenURI[_id]).length == 0);
     }
 }

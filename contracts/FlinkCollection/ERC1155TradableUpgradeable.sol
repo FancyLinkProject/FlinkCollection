@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./common/meta-transactions/ContentMixin.sol";
 import "./common/meta-transactions/NativeMetaTransaction.sol";
@@ -21,12 +22,13 @@ contract ProxyRegistry {
  * ERC1155Tradable - ERC1155 contract that whitelists an operator address, has create and mint functionality, and supports useful standards from OpenZeppelin,
   like exists(), name(), symbol(), and totalSupply()
  */
-contract ERC1155Tradable is
+contract ERC1155TradableUpgradeable is
+    Initializable,
     ContextMixin,
-    ERC1155,
+    ERC1155Upgradeable,
     NativeMetaTransaction,
-    Ownable,
-    Pausable
+    OwnableUpgradeable,
+    PausableUpgradeable
 {
     using Address for address;
 
@@ -42,11 +44,14 @@ contract ERC1155Tradable is
 
     mapping(uint256 => uint256) private _supply;
 
-    constructor(
+    function __ERC1155Tradable_init(
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress
-    ) ERC1155("") {
+    ) public onlyInitializing {
+        __ERC1155_init("");
+        __Ownable_init();
+        __Pausable_init();
         name = _name;
         symbol = _symbol;
         proxyRegistryAddress = _proxyRegistryAddress;
@@ -511,7 +516,7 @@ contract ERC1155Tradable is
     ) private {
         if (to.isContract()) {
             try
-                IERC1155Receiver(to).onERC1155Received(
+                IERC1155ReceiverUpgradeable(to).onERC1155Received(
                     operator,
                     from,
                     id,
@@ -520,7 +525,7 @@ contract ERC1155Tradable is
                 )
             returns (bytes4 response) {
                 if (
-                    response != IERC1155Receiver(to).onERC1155Received.selector
+                    response != IERC1155ReceiverUpgradeable(to).onERC1155Received.selector
                 ) {
                     revert("ERC1155: ERC1155Receiver rejected tokens");
                 }
@@ -544,7 +549,7 @@ contract ERC1155Tradable is
     ) internal {
         if (to.isContract()) {
             try
-                IERC1155Receiver(to).onERC1155BatchReceived(
+                IERC1155ReceiverUpgradeable(to).onERC1155BatchReceived(
                     operator,
                     from,
                     ids,
@@ -554,7 +559,7 @@ contract ERC1155Tradable is
             returns (bytes4 response) {
                 if (
                     response !=
-                    IERC1155Receiver(to).onERC1155BatchReceived.selector
+                    IERC1155ReceiverUpgradeable(to).onERC1155BatchReceived.selector
                 ) {
                     revert("ERC1155: ERC1155Receiver rejected tokens");
                 }

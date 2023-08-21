@@ -6,8 +6,7 @@ import {ZoneParameters, Schema, SpentItem, ReceivedItem} from "./lib/Considerati
 import {ZoneInterface} from "./interfaces/ZoneInterface.sol";
 import {BytesLib} from "./lib/BytesLib.sol";
 import {CriteriaResolutionErrors} from "./interfaces/CriteriaResolutionErrors.sol";
-
-import {console} from "hardhat/console.sol";
+import {ZeroBytes} from "./lib/ZoneConstants.sol";
 
 struct TokenInfo {
     uint256 version;
@@ -77,29 +76,11 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
                 if (!success) {
                     revert("Failed to initialize token info");
                 }
-            } else {
-                // if token has already been initialized, check whether the token data equals data specified by tokenInitializationInfo
-                // if not equal, revert
-                if (
-                    !BytesLib.equal(
-                        tokenInfo.data,
-                        tokenInitializationInfo.data
-                    ) ||
-                    tokenInfo.version != tokenInitializationInfo.version ||
-                    !BytesLib.equal(
-                        bytes(
-                            flinkCollection.uri(tokenInitializationInfo.tokenId)
-                        ),
-                        bytes(tokenInitializationInfo.tokenUri)
-                    )
-                ) {
-                    revert("Token info doesn't match");
-                }
             }
         }
 
         // check whether the token info in the order satisfies the offerer's intention
-        if (zoneParameters.zoneHash.length > 0) {
+        if (zoneParameters.zoneHash != ZeroBytes) {
             uint256[] memory flinkCollectionNftIdentifierLs = new uint256[](
                 zoneParameters.offer.length +
                     zoneParameters.consideration.length
