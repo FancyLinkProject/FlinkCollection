@@ -9,7 +9,7 @@ import { FlinkCollection } from "../typechain-types";
 import { chainIdOption } from "../types/type";
 import { TokenInfoVersion } from "./constants";
 
-export async function initializeTokenInfo({
+export async function initializeTokenInfo({mo
   author,
   FlinkCollection,
   chainId,
