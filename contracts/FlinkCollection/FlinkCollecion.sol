@@ -26,17 +26,17 @@ contract FlinkCollection is
     bytes32 public constant DOMAIN_SEPARATOR_TYPEHASH =
         0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
 
-    mapping(uint256 => address) tokenInfoValidityChecker;
+    mapping(uint256 => address) public tokenInfoValidityChecker;
 
     mapping(address => bool) public sharedProxyAddresses;
 
     mapping(uint256 => TokenInfo) public tokenInfo;
 
-    mapping(bytes => SignatureStatus) signatureStatus;
+    mapping(bytes => SignatureStatus) public signatureStatus;
 
-    mapping(uint256 => address) internal _creatorOverride;
+    mapping(uint256 => address) public _creatorOverride;
 
-    mapping(uint256 => address) internal versionInfoDecoder;
+    mapping(uint256 => address) public versionInfoDecoder;
 
     using TokenIdentifiers for uint256;
 
@@ -188,7 +188,13 @@ contract FlinkCollection is
         if (_creatorOverride[_id] != address(0)) {
             return _creatorOverride[_id];
         } else {
-            return _id.tokenCreator();
+            TokenInfo memory _tokenInfo = tokenInfo[_id];
+            address authorAddress = _tokenInfo.author;
+            require(
+                authorAddress != address(0),
+                "FlinkCollection#creator:no creater"
+            );
+            return authorAddress;
         }
     }
 
@@ -212,7 +218,14 @@ contract FlinkCollection is
     function _remainingSupply(
         uint256 _id
     ) internal view override returns (uint256) {
-        return maxSupply(_id) - totalSupply(_id);
+        TokenInfo memory _tokenInfo = tokenInfo[_id];
+
+        uint maxSupplyOfToken = _tokenInfo.supply;
+        require(
+            maxSupplyOfToken != 0,
+            "FlinkCollection#_remainingSupply:not minted"
+        );
+        return maxSupplyOfToken - totalSupply(_id);
     }
 
     function _isCreatorOrProxy(
@@ -253,10 +266,35 @@ contract FlinkCollection is
         return (tokenInfoLs, uriLs);
     }
 
+    function tokenIdConstruct(
+        address author,
+        bytes32 contentDigest,
+        bytes32 parentId,
+        uint supply
+    ) public view returns (uint) {
+        return
+            uint256(
+                keccak256(
+                    abi.encode(
+                        author,
+                        contentDigest,
+                        getChainId(),
+                        parentId,
+                        supply
+                    )
+                )
+            );
+    }
+
     function initializeTokenInfoPermit(
         TokenInitializationInfo memory tokenInitializationInfo
     ) public returns (bool) {
-        uint256 tokenId = tokenInitializationInfo.tokenId;
+        uint256 tokenId = tokenIdConstruct(
+            tokenInitializationInfo.author,
+            tokenInitializationInfo.contentDigest,
+            tokenInitializationInfo.parentId,
+            tokenInitializationInfo.supply
+        );
 
         require(!checkTokenInitialized(tokenId), "FLK 104");
 
@@ -274,7 +312,7 @@ contract FlinkCollection is
                 tokenInfoValidityChecker[tokenInitializationInfo.version]
             ).checkTokenInfoValidity(
                     tokenInitializationInfo.version,
-                    tokenInitializationInfo.data
+                    tokenInitializationInfo.extraData
                 );
             require(passValidityCheck, "FLK 106");
         }
@@ -296,8 +334,12 @@ contract FlinkCollection is
 
         // set tokenInfo
         tokenInfo[tokenId] = TokenInfo(
+            tokenInitializationInfo.author,
+            tokenInitializationInfo.contentDigest,
+            tokenInitializationInfo.parentId,
+            tokenInitializationInfo.supply,
             tokenInitializationInfo.version,
-            tokenInitializationInfo.data,
+            tokenInitializationInfo.extraData,
             true
         );
 
@@ -369,9 +411,12 @@ contract FlinkCollection is
         bytes32 msgHash = keccak256(
             abi.encode(
                 DOMAIN_SEPARATOR_TYPEHASH,
-                tokenInitializationInfo.tokenId,
+                tokenInitializationInfo.author,
+                tokenInitializationInfo.contentDigest,
+                tokenInitializationInfo.parentId,
+                tokenInitializationInfo.supply,
                 tokenInitializationInfo.version,
-                tokenInitializationInfo.data,
+                tokenInitializationInfo.extraData,
                 tokenInitializationInfo.tokenUri,
                 tokenInitializationInfo.nonce
             )
