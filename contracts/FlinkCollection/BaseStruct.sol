@@ -3,17 +3,24 @@
 pragma solidity ^0.8.4;
 
 struct TokenInitializationInfo {
-    uint256 tokenId;
+    address author;
+    bytes32 contentDigest;
+    bytes32 parentId;
+    uint supply;
     uint256 version;
-    bytes data;
+    bytes extraData;
     string tokenUri;
     uint256 nonce;
     bytes signature;
 }
 
 struct TokenInfo {
-    uint256 version;
-    bytes data;
+    address author;
+    bytes32 contentDigest;
+    bytes32 parentId;
+    uint supply;
+    uint version;
+    bytes extraData;
     bool initialized;
 }
 
