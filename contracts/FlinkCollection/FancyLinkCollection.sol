@@ -25,6 +25,8 @@ contract FancyLinkCollection is
     ContractUri,
     EIP712Base
 {
+    uint[50] private _slots;
+
     address public admin;
 
     // Proxy registry address
@@ -58,11 +60,15 @@ contract FancyLinkCollection is
         _disableInitializers();
     }
 
-    function initialize(address _proxyRegistryAddress) public initializer {
+    function initialize(
+        string calldata name,
+        address _proxyRegistryAddress
+    ) public initializer {
         __ERC1155_init("");
         __ERC1155Supply_init();
         __ERC1155URIStorage_init();
         __Pausable_init_unchained();
+        _initializeEIP712(name);
         admin = msg.sender;
         proxyRegistryAddress = _proxyRegistryAddress;
     }
