@@ -13,6 +13,7 @@ import "./lib/BytesLib.sol";
 import "./ProxyRegistry.sol";
 import "./ContractUri.sol";
 import "./interfaces/Zone.sol";
+import "./common/meta-transactions/EIP712Base.sol";
 
 contract FancyLinkCollection is
     ERC1155SupplyUriUpgradeable,
@@ -21,10 +22,10 @@ contract FancyLinkCollection is
     BaseErrors,
     BaseEvents,
     ContextMixin,
-    ContractUri
+    ContractUri,
+    EIP712Base
 {
     address public admin;
-    string private contractLevelURI;
 
     // Proxy registry address
     address public proxyRegistryAddress;
@@ -187,10 +188,9 @@ contract FancyLinkCollection is
         // signer should be the creator of the tokenId
         require(signer == tokenInitializationInfo.author, "FLK 107");
 
-        if (tokenInitializationInfo.zone != address(0)) {
-            bool success = Zone(zone).beforeInitialize(
-                tokenInitializationInfo.extraData
-            );
+        address zone = tokenInitializationInfo.zone;
+        if (zone != address(0)) {
+            bool success = Zone(zone).beforeInitialize(tokenInitializationInfo);
             require(
                 success,
                 "FancyLinkCollection#initializeTokenInfoPermit:fail beforeInitialize"

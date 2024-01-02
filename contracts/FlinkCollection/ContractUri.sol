@@ -3,6 +3,8 @@
 pragma solidity ^0.8.20;
 
 contract ContractUri {
+    string private contractLevelURI;
+
     function contractURI() public view returns (string memory) {
         return contractLevelURI;
     }
