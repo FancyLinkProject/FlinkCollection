@@ -25,8 +25,6 @@ contract FancyLinkCollection is
     ContractUri,
     EIP712Base
 {
-    uint[50] private _slots;
-
     address public admin;
 
     // Proxy registry address
