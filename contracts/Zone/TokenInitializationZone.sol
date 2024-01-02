@@ -7,21 +7,7 @@ import {ZoneInterface} from "./interfaces/ZoneInterface.sol";
 import {BytesLib} from "./lib/BytesLib.sol";
 import {CriteriaResolutionErrors} from "./interfaces/CriteriaResolutionErrors.sol";
 import {ZeroBytes} from "./lib/ZoneConstants.sol";
-
-struct TokenInfo {
-    uint256 version;
-    bytes data;
-    bool initialized;
-}
-
-struct TokenInitializationInfo {
-    uint256 tokenId;
-    uint256 version;
-    bytes data;
-    string tokenUri;
-    uint256 nonce;
-    bytes signature;
-}
+import "../FlinkCollection/FlinkCollectionBaseStruct.sol";
 
 interface IFlinkCollection {
     function initializeTokenInfoPermit(
@@ -44,28 +30,27 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
         flinkCollection = _flinkCollection;
     }
 
-    // Called by Consideration whenever any extraData is provided by the caller.
-    function validateOrder(
-        ZoneParameters calldata zoneParameters
-    ) external returns (bytes4 validOrderMagicValue) {
-        //decode zoneData.extraData to TokenInitializationInfo[]
-        (
-            TokenInitializationInfo[] memory tokenInitializationInfoLs,
-            bytes32[][] memory proofs
-        ) = abi.decode(
-                zoneParameters.extraData,
-                (TokenInitializationInfo[], bytes32[][])
-            );
+    function beforeTransfer(bytes memory data) external returns (bool) {
+        TokenInitializationInfo[] memory tokenInitializationInfoLs = abi.decode(
+            data,
+            (TokenInitializationInfo[])
+        );
 
         // loop tokenInitializationInfoLs
         for (uint256 i = 0; i < tokenInitializationInfoLs.length; i++) {
             TokenInitializationInfo
                 memory tokenInitializationInfo = tokenInitializationInfoLs[i];
 
-            // get tokenInfo of the tokenId specified by tokenInitializationInfo
-            TokenInfo memory tokenInfo = flinkCollection.tokenInfo(
-                tokenInitializationInfo.tokenId
+            uint tokenId = tokenIdConstruct(
+                tokenInitializationInfo.author,
+                tokenInitializationInfo.contentDigest,
+                tokenInitializationInfo.parentId,
+                tokenInitializationInfo.supply,
+                address(flinkCollection)
             );
+
+            // get tokenInfo of the tokenId specified by tokenInitializationInfo
+            TokenInfo memory tokenInfo = flinkCollection.tokenInfo(tokenId);
 
             // if token hasn't been initialized, initialize it
             // if failed to initialize, then revert
@@ -78,6 +63,19 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
                 }
             }
         }
+
+        return true;
+    }
+
+    // Called by Consideration whenever any extraData is provided by the caller.
+    function validateOrder(
+        ZoneParameters calldata zoneParameters
+    ) external returns (bytes4 validOrderMagicValue) {
+        //decode zoneData.extraData to TokenInitializationInfo[]
+        bytes32[][] memory proofs = abi.decode(
+            zoneParameters.extraData,
+            (bytes32[][])
+        );
 
         // check whether the token info in the order satisfies the offerer's intention
         if (zoneParameters.zoneHash != ZeroBytes) {
@@ -192,5 +190,35 @@ contract TokenInitializationZone is ZoneInterface, CriteriaResolutionErrors {
         if (computedHash != root) {
             revert InvalidProof();
         }
+    }
+
+    function tokenIdConstruct(
+        address _author,
+        bytes32 _contentDigest,
+        uint _parentId,
+        uint _supply,
+        address _flinkCollection
+    ) public view returns (uint) {
+        return
+            uint256(
+                keccak256(
+                    abi.encode(
+                        _author,
+                        _contentDigest,
+                        getChainId(),
+                        _flinkCollection,
+                        _parentId,
+                        _supply
+                    )
+                )
+            );
+    }
+
+    function getChainId() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
     }
 }
