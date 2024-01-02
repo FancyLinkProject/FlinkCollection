@@ -9,6 +9,7 @@ struct TokenInitializationInfo {
     uint supply;
     uint kind;
     uint version;
+    address zone;
     bytes extraData;
     string tokenUri;
     uint256 nonce;

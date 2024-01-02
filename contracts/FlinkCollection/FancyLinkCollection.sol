@@ -5,7 +5,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "./common/meta-transactions/ContextMixin.sol";
-import "./common/meta-transactions/NativeMetaTransaction.sol";
 import "./ERC1155SupplyUriUpgradeable.sol";
 import "./BaseErrors.sol";
 import "./FlinkCollectionBaseStruct.sol";
@@ -13,10 +12,10 @@ import "./BaseEvents.sol";
 import "./lib/BytesLib.sol";
 import "./ProxyRegistry.sol";
 import "./ContractUri.sol";
+import "./interfaces/Zone.sol";
 
 contract FancyLinkCollection is
     ERC1155SupplyUriUpgradeable,
-    NativeMetaTransaction,
     ReentrancyGuardUpgradeable,
     PausableUpgradeable,
     BaseErrors,
@@ -29,8 +28,6 @@ contract FancyLinkCollection is
 
     // Proxy registry address
     address public proxyRegistryAddress;
-
-    mapping(uint => address) public tokenInfoValidityChecker;
 
     mapping(address => bool) public sharedProxyAddresses;
 
@@ -125,21 +122,6 @@ contract FancyLinkCollection is
         _setContractURI(_contractLevelURI);
     }
 
-    function _isProxyForUser(
-        address _user,
-        address _address
-    ) internal virtual returns (bool) {
-        if (sharedProxyAddresses[_address]) {
-            return true;
-        }
-
-        if (!isContract(proxyRegistryAddress)) {
-            return false;
-        }
-        ProxyRegistry proxyRegistry = ProxyRegistry(proxyRegistryAddress);
-        return address(proxyRegistry.proxies(_user)) == _address;
-    }
-
     /**
      * @dev Allows owner to change the proxy registry
      */
@@ -184,7 +166,7 @@ contract FancyLinkCollection is
 
     function initializeTokenInfoPermit(
         TokenInitializationInfo memory tokenInitializationInfo
-    ) public returns (bool) {
+    ) public nonReentrant returns (bool) {
         uint256 tokenId = tokenIdConstruct(
             tokenInitializationInfo.author,
             tokenInitializationInfo.contentDigest,
@@ -204,6 +186,16 @@ contract FancyLinkCollection is
 
         // signer should be the creator of the tokenId
         require(signer == tokenInitializationInfo.author, "FLK 107");
+
+        if (tokenInitializationInfo.zone != address(0)) {
+            bool success = Zone(zone).beforeInitialize(
+                tokenInitializationInfo.extraData
+            );
+            require(
+                success,
+                "FancyLinkCollection#initializeTokenInfoPermit:fail beforeInitialize"
+            );
+        }
 
         _mint(
             tokenInitializationInfo.author,
@@ -276,18 +268,6 @@ contract FancyLinkCollection is
         return true;
     }
 
-    function setTokenInfoValidityCheckerAddress(
-        uint256 version,
-        address _tokenInfoValidityCheckAddress
-    ) public onlyAdmin {
-        tokenInfoValidityChecker[version] = _tokenInfoValidityCheckAddress;
-
-        emit TokenInfoValidityCheckerChanged(
-            version,
-            _tokenInfoValidityCheckAddress
-        );
-    }
-
     function setTokenInfoDecoderAddress(
         uint256 _kind,
         uint256 _version,
@@ -314,6 +294,7 @@ contract FancyLinkCollection is
                 tokenInitializationInfo.supply,
                 tokenInitializationInfo.kind,
                 tokenInitializationInfo.version,
+                tokenInitializationInfo.zone,
                 tokenInitializationInfo.extraData,
                 tokenInitializationInfo.tokenUri,
                 tokenInitializationInfo.nonce
@@ -359,5 +340,20 @@ contract FancyLinkCollection is
             size := extcodesize(_addr)
         }
         return (size > 0);
+    }
+
+    function _isProxyForUser(
+        address _user,
+        address _address
+    ) internal virtual returns (bool) {
+        if (sharedProxyAddresses[_address]) {
+            return true;
+        }
+
+        if (!isContract(proxyRegistryAddress)) {
+            return false;
+        }
+        ProxyRegistry proxyRegistry = ProxyRegistry(proxyRegistryAddress);
+        return address(proxyRegistry.proxies(_user)) == _address;
     }
 }
