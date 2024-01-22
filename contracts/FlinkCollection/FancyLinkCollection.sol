@@ -36,12 +36,10 @@ contract FancyLinkCollection is
 
     mapping(bytes => SignatureStatus) public signatureStatus;
 
-    mapping(uint => address) private _creatorOverride;
-
     mapping(uint => mapping(uint => address)) public infoResolver;
 
     modifier onlyAdmin() {
-        require(admin == msg.sender, "FLK: Only Admin");
+        require(admin == msg.sender, "FLK:Only Admin");
         _;
     }
 
@@ -49,7 +47,7 @@ contract FancyLinkCollection is
      * @dev Require msg.sender to be the creator of the token id
      */
     modifier creatorOnly(uint256 _id) {
-        require(_isCreatorOrProxy(_id, _msgSender()), "FLK 100");
+        require(_isCreatorOrProxy(_id, _msgSender()), "FLK:Only creator");
         _;
     }
 
@@ -78,7 +76,7 @@ contract FancyLinkCollection is
         address creator_ = tokenInfo[_id].author;
         require(
             creator_ != address(0),
-            "FancyLinkCollection#_isCreatorOrProxy:invalid author"
+            "FancyLinkCollection#_isCreatorOrProxy:invalid creator"
         );
         return creator_ == _address || _isProxyForUser(creator_, _address);
     }
@@ -94,14 +92,6 @@ contract FancyLinkCollection is
 
     function unPause() external onlyAdmin {
         _unpause();
-    }
-
-    function mint(
-        address receiver,
-        uint256 tokenId,
-        uint256 value
-    ) public onlyAdmin whenNotPaused {
-        _mint(receiver, tokenId, value, "");
     }
 
     /**
@@ -139,9 +129,9 @@ contract FancyLinkCollection is
      */
     function updateSharedProxyAddress(
         address _address,
-        bool _addr
+        bool _isSharedProxy
     ) public onlyAdmin {
-        sharedProxyAddresses[_address] = _addr;
+        sharedProxyAddresses[_address] = _isSharedProxy;
     }
 
     function tokenIdConstruct(
@@ -179,25 +169,31 @@ contract FancyLinkCollection is
             tokenInitializationInfo.supply
         );
 
-        require(!checkTokenInitialized(tokenId), "FLK 104");
+        require(
+            !checkTokenInitialized(tokenId),
+            "FLK#initializeTokenInfoPermit: Token already initialzied"
+        );
 
         require(
             signatureValidity(tokenInitializationInfo.signature),
-            "FLK 105"
+            "FLK#initializeTokenInfoPermit: Invalid signature"
         );
 
         // recover signer
         address signer = recoverSigner(tokenInitializationInfo);
 
         // signer should be the creator of the tokenId
-        require(signer == tokenInitializationInfo.author, "FLK 107");
+        require(
+            signer == tokenInitializationInfo.author,
+            "FLK#initializeTokenInfoPermit: Not signer"
+        );
 
         address zone = tokenInitializationInfo.zone;
         if (zone != address(0)) {
             bool success = Zone(zone).beforeInitialize(tokenInitializationInfo);
             require(
                 success,
-                "FancyLinkCollection#initializeTokenInfoPermit:fail beforeInitialize"
+                "FLK#initializeTokenInfoPermit:fail beforeInitialize"
             );
         }
 
@@ -259,13 +255,13 @@ contract FancyLinkCollection is
 
         require(
             signatureValidity(tokenInitializationInfo.signature),
-            "FLK 109"
+            "FLK#cancelTokenInfoSignature:invalid signature"
         );
 
         // recover signer
         address signer = recoverSigner(tokenInitializationInfo);
 
-        require(signer == msg.sender, "FLK 110");
+        require(signer == msg.sender, "FLK#cancelTokenInfoSignature:invalid operator");
 
         signatureStatus[tokenInitializationInfo.signature].cancelled = true;
 
