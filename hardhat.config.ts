@@ -5,55 +5,35 @@ require("dotenv").config();
 
 module.exports = {
   solidity: {
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 100,
-      },
-    },
     compilers: [
       {
-        version: "0.8.17",
+        version: "0.8.20",
         settings: {
-          viaIR: true,
-          optimizer: { enabled: true, runs: 100 },
-          metadata: {
-            bytecodeHash: "none",
-          },
-          outputSelection: {
-            "*": {
-              "*": ["evm.assembly", "irOptimized", "devdoc"],
-            },
+          optimizer: {
+            enabled: true,
+            runs: 10,
           },
         },
       },
     ],
   },
+  typechain: {
+    outDir: "typechain",
+    target: "ethers-v6",
+  },
 
   networks: {
-    hardhat: { allowUnlimitedContractSize: true },
+    // hardhat: { allowUnlimitedContractSize: true },
     goerli: {
       chainId: 5,
-      url: process.env.ALCHEMY_API,
-      accounts: [
-        process.env.ACCOUNT_1 as string,
-        process.env.ACCOUNT_2 as string,
-        process.env.ACCOUNT_3 as string,
-        process.env.ACCOUNT_4 as string,
-        process.env.ACCOUNT_5 as string,
-      ],
+      url: process.env.GOERLI_RPC,
+      accounts: [process.env.DEPLOYER as string, process.env.ACCOUNT_1 as string],
       gas: 10000000,
     },
     mumbai: {
       chainId: 80001,
-      url: process.env.MUMBAI_API,
-      accounts: [
-        process.env.ACCOUNT_1 as string,
-        process.env.ACCOUNT_2 as string,
-        process.env.ACCOUNT_3 as string,
-        process.env.ACCOUNT_4 as string,
-        process.env.ACCOUNT_5 as string,
-      ],
+      url: process.env.MUMBAI_RPC,
+      accounts: [process.env.DEPLOYER as string, process.env.ACCOUNT_1 as string],
       gas: 1000000,
     },
   },

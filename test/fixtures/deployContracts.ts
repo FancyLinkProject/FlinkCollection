@@ -1,28 +1,26 @@
 import { ethers, upgrades } from "hardhat";
-import { Wallet } from "ethers";
 import { randomHex } from "../../utils/encoding";
 
-import { faucet } from "../../utils/faucet";
 import { FlinkCollection } from "../../typechain-types";
+import { ZeroAddress } from "ethers";
 
 export async function deployContracts() {
   const { provider } = ethers;
   let FlinkCollection: FlinkCollection;
 
-  const flinkCollectionOwner: Wallet = new ethers.Wallet(randomHex(32), provider);
-  await faucet(flinkCollectionOwner.address, provider);
+  const [flinkCollectionOwner, addr1, addr2, addr3] = await ethers.getSigners();
 
   // deploy FlinkCollection
   let FlinkCollectionFactory = await ethers.getContractFactory(
-    "FlinkCollection",
+    "FancyLinkCollection",
     flinkCollectionOwner
   );
 
   FlinkCollection = (await upgrades.deployProxy(
     FlinkCollectionFactory,
-    ["Flink Collection", "FLK", ethers.constants.AddressZero, "https://metadata.fancylink.xyz/"],
-    { kind: "uups", initializer: "initialize" }
-  )) as FlinkCollection;
+    ["FancyLinkCollection", ZeroAddress],
+    { kind: "transparent", initializer: "initialize" }
+  )) as any as FlinkCollection;
 
   //   deploy tokenInfoDecoder
   let TokenInfoDecoderV1Factory = await ethers.getContractFactory(
@@ -47,7 +45,7 @@ export async function deployContracts() {
   );
 
   const TokenInitializationZone = await TokenInitializationZoneFactory.deploy(
-    FlinkCollection.address
+    FlinkCollection.target
   );
 
   return {
@@ -56,6 +54,9 @@ export async function deployContracts() {
     TokenInfoDecoderV1,
     TokenInfoValidityCheckerV1,
     TokenInitializationZone,
+    addr1,
+    addr2,
+    addr3,
   };
 }
 

@@ -1,44 +1,32 @@
-import hre, { upgrades } from "hardhat";
-import { ethers } from "ethers";
+import hre, { ethers, upgrades } from "hardhat";
+
 import { seaportAddress15 } from "../constants/constants";
 import { FlinkCollection } from "../typechain-types";
+import { ZeroAddress } from "ethers";
 
 async function main() {
-  const [deployer_1, deployer_2] = await hre.ethers.getSigners();
+  let FlinkCollection: FlinkCollection;
 
-  console.log("Deploying contracts with the account:", deployer_1.address);
-  console.log("Account balance:", (await deployer_1.getBalance()).toString());
+  const [flinkCollectionOwner] = await ethers.getSigners();
 
-  const FlinkCollectionFactory = await hre.ethers.getContractFactory("FlinkCollection", deployer_1);
+  // deploy FlinkCollection
+  let FlinkCollectionFactory = await ethers.getContractFactory(
+    "FancyLinkCollection",
+    flinkCollectionOwner
+  );
 
-  const FlinkCollection = (await upgrades.deployProxy(
+  FlinkCollection = (await upgrades.deployProxy(
     FlinkCollectionFactory,
-    ["Flink Collection", "FLK", ethers.constants.AddressZero, "https://metadata.fancylink.xyz/"],
-    { kind: "uups", initializer: "initialize" }
-  )) as FlinkCollection;
-  console.log("FlinkCollection address: ", FlinkCollection.address);
+    ["FancyLinkCollection", ZeroAddress],
+    { kind: "transparent", initializer: "initialize" }
+  )) as any as FlinkCollection;
 
-  //   deploy TokenInitializationZone
-  const TokenInitializationZoneFactory = await hre.ethers.getContractFactory(
-    "TokenInitializationZone",
-    deployer_1
-  );
-  //   create and initialize checkExecutor using multiContractWallet.address
-  const TokenInitializationZone = await TokenInitializationZoneFactory.deploy(
-    FlinkCollection.address
-  );
-  console.log("TokenInitializationZone address: ", TokenInitializationZone.address);
-
-  const tx = await FlinkCollection.connect(deployer_1).addSharedProxyAddress(seaportAddress15, {
-    gasLimit: 300000,
-  });
-
-  console.log(tx);
+  console.log(`FlinkCollection address: ${await FlinkCollection.getAddress()}`);
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error({ errMessage: error.message });
+    console.error({ errMessage: error });
     process.exit(1);
   });

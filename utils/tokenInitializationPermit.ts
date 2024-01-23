@@ -1,9 +1,8 @@
-import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import crypto from "crypto";
 import { DOMAIN_SEPARATOR_TYPEHASH } from "./constants";
-import { BigNumber } from "ethers";
-import { TokenInfoVersion } from "../test/constants";
+import { AbiCoder, getBytes, keccak256, toUtf8Bytes } from "ethers";
+import { InfoVersion, TokenKind } from "../test/constants";
 
 // get a random nonce
 export async function nonceGenerator(userAddress: string): Promise<string> {
@@ -14,7 +13,7 @@ export async function nonceGenerator(userAddress: string): Promise<string> {
 
   const t = new Date().getTime().toString();
 
-  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(userAddress + entropy + t));
+  return keccak256(toUtf8Bytes(userAddress + entropy + t));
 }
 
 export function encodeDataV1(
@@ -25,7 +24,7 @@ export function encodeDataV1(
   volumeNo: number,
   chapterNo: number
 ) {
-  const tokenInfo = defaultAbiCoder.encode(
+  const tokenInfo = AbiCoder.defaultAbiCoder().encode(
     [
       "tuple(address author, string fictionName, string volumeName, string chapterName, uint256 volumeNo, uint256 chapterNo)",
     ],
@@ -45,9 +44,13 @@ export function encodeDataV1(
 }
 
 export interface TokenInitializationInfo {
-  tokenId: BigNumber;
-  version: number;
-  data: string;
+  author: string;
+  contentDigest: string;
+  parentId: BigInt;
+  supply: BigInt;
+  kind: TokenKind;
+  version: InfoVersion;
+  extraData: string;
   tokenUri: string;
   nonce: string;
   signature: string;
@@ -57,9 +60,9 @@ export function generateSingleTokenInitializeInfoVersion1(
   tokenInitializationInfo: TokenInitializationInfo,
   proofLs: string[]
 ) {
-  const encodedSingleTokenInitializationInfo = defaultAbiCoder.encode(
+  const encodedSingleTokenInitializationInfo = AbiCoder.defaultAbiCoder().encode(
     [
-      "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
+      "tuple(address author, bytes32 contentDigest, uint parentId, uint supply, uint kind, uint version, bytes extraData, string tokenUri, uint nonce, bytes signature)[]",
       "bytes32[][]",
     ],
     [[tokenInitializationInfo], [proofLs]]
@@ -72,7 +75,7 @@ export function generateBatchTokenInitializationInfoVersion1(
   TokenInitializationInfoLs: TokenInitializationInfo[],
   proofLs: string[][]
 ) {
-  const encodedBatchTokenInitializationInfo = defaultAbiCoder.encode(
+  const encodedBatchTokenInitializationInfo = AbiCoder.defaultAbiCoder().encode(
     [
       "tuple(uint256 tokenId, uint256 version, bytes data, string tokenUri, uint256 nonce, bytes signature)[]",
       "bytes32[][]",
@@ -83,43 +86,109 @@ export function generateBatchTokenInitializationInfoVersion1(
   return encodedBatchTokenInitializationInfo;
 }
 
+export function generateBeforeTransferData(tokenInitializationInfo: TokenInitializationInfo) {
+  const encodedSingleTokenInitializationInfo = AbiCoder.defaultAbiCoder().encode(
+    [
+      "tuple(address author, bytes32 contentDigest, uint parentId, uint supply, uint kind, uint version, bytes extraData, string tokenUri, uint nonce, bytes signature)[]",
+    ],
+    [[tokenInitializationInfo]]
+  );
+
+  return encodedSingleTokenInitializationInfo;
+}
+
 export function generateMessageHash(
   chainId: number | undefined,
   flinkCollectionAddress: string,
-  tokenId: BigNumber,
-  version: number,
-  data: string,
+  authorAddress: string,
+  contentDigest: string,
+  parentId: BigInt,
+  supply: BigInt,
+  kind: TokenKind,
+  version: InfoVersion,
+  zone: string,
+  extraData: string,
   tokenUri: string,
-  nonce: string
+  nonce: string,
+  domainName: string,
+  domainVersion: string
 ) {
   if (!chainId) {
     throw "invalid chainId";
   }
 
-  var msgHash = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ["bytes32", "uint256", "uint256", "bytes", "string", "uint256"],
-      [DOMAIN_SEPARATOR_TYPEHASH, tokenId, version, data, tokenUri, nonce]
+  var msgHash = keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
+      [
+        "bytes32",
+        "address",
+        "bytes32",
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint256",
+        "address",
+        "bytes",
+        "string",
+        "uint256",
+      ],
+      [
+        DOMAIN_SEPARATOR_TYPEHASH,
+        authorAddress,
+        contentDigest,
+        parentId,
+        supply,
+        kind,
+        version,
+        zone,
+        extraData,
+        tokenUri,
+        nonce,
+      ]
     )
   );
 
-  const domainSeparator = getDomainSeparator(chainId, flinkCollectionAddress);
+  const domainSeparator = getDomainSeparator(
+    chainId,
+    flinkCollectionAddress,
+    domainName,
+    domainVersion
+  );
 
-  const msgHash_2 = ethers.utils.keccak256(
-    ethers.utils.solidityPack(
+  const msgHash_2 = keccak256(
+    ethers.solidityPacked(
       ["bytes1", "bytes1", "bytes32", "bytes32"],
       ["0x19", "0x01", domainSeparator, msgHash]
     )
   );
 
-  return { msgHash: ethers.utils.arrayify(msgHash_2) };
+  return {
+    msgHash: ethers.getBytes(msgHash_2),
+    tokenId: keccak256(
+      ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "bytes32", "uint256", "address", "uint256", "uint256"],
+        [authorAddress, contentDigest, chainId, flinkCollectionAddress, parentId, supply]
+      )
+    ),
+  };
 }
 
-export function getDomainSeparator(chainId: number | undefined, contractAddress: string): string {
-  return ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ["bytes32", "uint256", "address"],
-      [DOMAIN_SEPARATOR_TYPEHASH, chainId, contractAddress]
+export function getDomainSeparator(
+  chainId: number | undefined,
+  contractAddress: string,
+  name: string,
+  version: string
+): string {
+  return keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
+      ["bytes32", "bytes32", "bytes32", "address", "uint256"],
+      [
+        DOMAIN_SEPARATOR_TYPEHASH,
+        keccak256(toUtf8Bytes(name)),
+        keccak256(toUtf8Bytes(version)),
+        contractAddress,
+        chainId,
+      ]
     )
   );
 }
@@ -130,8 +199,8 @@ export function generateZoneHash(
   data: string,
   uri: string
 ): string {
-  return ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
+  return keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
       ["uint256", "tuple(uint256 version, bytes data, bool initialized)", "string"],
       [tokenId, { version, data, initialized: true }, uri]
     )
@@ -139,20 +208,29 @@ export function generateZoneHash(
 }
 
 export function generateTokenInfoVersion1(
-  tokenId: BigNumber,
-  dataVersion: TokenInfoVersion,
-  data: string,
-  tokenUri:string,
-  nonce:string,
-  compactSig:string
+  authorAddress: string,
+  contentDigest: string,
+  parentId: bigint,
+  supply: bigint,
+  kind: TokenKind,
+  version: InfoVersion,
+  zone: string,
+  extraData: string,
+  tokenUri: string,
+  nonce: string,
+  compactSig: string
 ) {
   return {
-    tokenId,
-    version: dataVersion,
-    data,
+    author: authorAddress,
+    contentDigest,
+    parentId,
+    supply,
+    kind,
+    version,
+    zone,
+    extraData,
     tokenUri,
     nonce,
     signature: compactSig,
   };
 }
-

@@ -1,0 +1,8 @@
+{
+  "mumbai": {
+    "fancyLinkCollection": "0x1f5c523a3170362dd3db25f224673477111A5BCb"
+  },
+  "goerli": {
+    "fancyLinkCollection": "0x1f5c523a3170362dd3db25f224673477111A5BCb"
+  }
+}
