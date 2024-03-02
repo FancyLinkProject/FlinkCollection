@@ -311,7 +311,7 @@ contract FancyLinkCollection is
         );
 
         bytes32 sigHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+            abi.encodePacked("\x19Ethereum Signed Message:\n66", dataHash)
         );
 
         if (tokenInitializationInfo.signature.length == 65) {
